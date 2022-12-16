@@ -55,7 +55,7 @@ struct EquipEffect {
 	vector<pair<float,pair<int,int>>> 增幅系数;
 };
 
-class Status; class Equip; class Ring; class MagicStone; class Skill; class BossSkill; class Entity;
+class Status; class Equip; class Ring; class MagicStone; class Skill; class ViolentSkill; class Entity;
 
 class Status {
 public:
@@ -133,6 +133,7 @@ public:
 	float 基础命中率, 基础暴击率, 冷却时间增加;
 
 	int 施放条件, 技能设置a, 技能设置b;
+	void Clear();
 	bool AllowRelease(Entity* owner);
 	void TargetSelect(Entity* owner);
 	void Release(Entity* owner);
@@ -142,46 +143,34 @@ public:
 	void Click(float p, int inde);
 	float P(int index = 0);
 };
-class BossSkill {
+class ViolentSkill {
 public:
 	string 名称;
-	int 等级;
-
-	string 对象;
-	int 常数; float 系数[10];
-	string 伤害类型;
-
-	float 概率;
-	string 状态名称;
-	int 状态类型;
-	int 状态常数; float 状态系数[10];
-	float 持续时间;
-	float 最大层数;
-
-	string 额外伤害种族; float 额外伤害比例;
-	float 吸血;
-	bool 无视嘲讽;
-	float 基础命中率, 基础暴击率, 冷却时间增加;
-	 
-	int 技能类型, 技能设置;
+	bool 重伤失效;
+	string 类型;
+	float 首次施放时间;
+	float 冷却等待时间;
+	Skill 内容;
 	void Release(Entity* owner);
+	void Clear();
 };
 class Entity {
 public:
 	string 名称;
 	string 种族;
 	bool 阵营; int 站位; int 存活, 当前生命值;
-	float 冷却时间增加, 冷却等待时间; int 循环模式; string 上个技能; int 下个技能;
+	float 冷却时间增加, 冷却等待时间; int 循环模式; string 上个技能;
 	int 攻击偏好, 我方目标, 敌方目标;
 
 	float 面板[28], 增幅[28];
 	vector<Status> 状态;
 	vector<string> 免疫;
 	vector<Skill> 技能;
+	ViolentSkill 狂暴技能;
 	Equip 武器, 铠甲, 饰品1, 饰品2;	MagicStone 魔石; Ring 环;
-	bool 重伤失效; float 狂暴等待时间;	BossSkill 狂暴技能;
-
+	
 	Entity();
+	void Clear(int place);
 	void Init(int place);
 	bool LoadHero(string src);
 	string Discription(int n);
@@ -207,4 +196,6 @@ public:
 
 //跟据输入的简称，查找装备名称
 string ReadEquipAbbr(string abbr);
+string ReadMonsterAbbr(string abbr);
+void LoadMonster(string src);
 #endif

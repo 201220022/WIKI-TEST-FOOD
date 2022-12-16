@@ -401,6 +401,32 @@ void MagicStone::Affect(Entity* owner, string condition) {
 Entity::Entity() {
 	名称 = "未选择";
 }
+void Entity::Clear(int place) {
+	名称 = "未选择";
+	种族 = "未种族";
+	阵营 = 0;
+	站位 = place;
+	存活 = 0;
+	当前生命值 = 0;
+	冷却时间增加 = 0;
+	冷却等待时间 = 0;
+	循环模式 = 0;
+	上个技能 = "";
+	攻击偏好 = 0;
+	我方目标 = 0;
+	敌方目标 = 0;
+	for (int i = 0; i < 28; i++) { 面板[i] = 0; 增幅[i] = 0; }
+	状态.clear();
+	免疫.clear();
+	技能.clear();
+	武器.Load("未选择");
+	铠甲.Load("未选择");
+	饰品1.Load("未选择");
+	饰品2.Load("未选择");
+	魔石.Init(0, 0, 0); 
+	环.Init(0, 0);
+	狂暴技能.Clear();
+}
 void Entity::Init(int place){
 	//跟据inputs[cursuit][place]中的信息，初始化entity[1][place]
 	名称 = inputs[cursuit][place].职业;
@@ -444,7 +470,7 @@ void Entity::Init(int place){
 	冷却时间增加 = 0;
 	冷却等待时间 = 0; if (inputs[cursuit][place].先发 == 1)冷却等待时间 = 4.5;
 	循环模式 = 默认施放;
-	上个技能 = ""; 下个技能 = 0;
+	上个技能 = ""; 
 	当前生命值 = 体质 * 10;
 	int k = 0;
 	For(技能, i) if ((*i).施放条件 == 0) { (*i).技能设置a = inputs[cursuit][place].技能设置[k]; k++; }
@@ -1314,8 +1340,22 @@ float Skill::P(int index) {
 		return float(技能设置b) / float(maxset);
 	}
 }
-void BossSkill::Release(Entity* owner) {
+void Skill::Clear() {
+	名称 = "";
+	等级 = -1;
+	对象 = "";
+	伤害类型 = "";
+}
+void ViolentSkill::Release(Entity* owner) {
 
+}
+void ViolentSkill::Clear() {
+	名称 = "";
+	重伤失效 = 1;
+	类型 = "";
+	首次施放时间 = -1;
+	冷却等待时间 = 0;
+	内容.Clear();
 }
 
 string ReadEquipAbbr(string abbr) {
@@ -1330,10 +1370,39 @@ string ReadEquipAbbr(string abbr) {
 	rapidjson::Value& data = dom["装备数据"];
 	for (int i = 0; i < data.Size(); i++) {
 		for (int j = 0; j < data[i]["简称"].Size(); j++) {
-			if (abbr == data[i]["简称"][j].GetString()) {
+			if (abbr == string(data[i]["简称"][j].GetString())) {
 				return data[i]["名称"].GetString();
 			}
 		}
 	}
 	return "";
+}
+string ReadMonsterAbbr(string abbr) {
+	ifstream file("JSON/怪物数据.json");
+	string json_content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+	file.close();
+	rapidjson::Document dom;
+	dom.Parse(UTF8_2_GBK(json_content).c_str());
+	rapidjson::Value& data = dom["怪物数据"];
+	for (int i = 0; i < data.Size(); i++) {
+		for (int j = 0; j < data[i]["简称"].Size(); j++) {
+			if (abbr == string(data[i]["简称"][j].GetString())) {
+				return data[i]["名称"].GetString();
+			}
+		}
+	}
+	return "";
+}
+void LoadMonster(string src) {
+	ifstream file("JSON/怪物数据.json");
+	string json_content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+	file.close();
+	rapidjson::Document dom;
+	dom.Parse(UTF8_2_GBK(json_content).c_str());
+	for (int i = 0; i < dom["怪物数据"].Size(); i++) {
+		if (src == string(dom["怪物数据"][i]["名称"].GetString())) {
+			rapidjson::Value& data = dom["怪物数据"][i];
+			for (int j = 0; j < MAX_GROUP; j++)entity[0][i].Clear(j);
+		}
+	}
 }
