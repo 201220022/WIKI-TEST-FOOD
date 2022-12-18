@@ -66,7 +66,6 @@ public:
 	int 每层数值;
 	int 当前层数;
 	int 最大层数;
-	bool 允许状态效果;
 	Entity* 附加者;
 	Status(string name);
 	Status(Skill* skill, Entity* src);
@@ -84,7 +83,7 @@ public:
 	vector<string> 免疫列表;
 	vector<EquipEffect> 装备特效;
 	bool Load(string abbr);
-	bool Affect(Entity* owner, string condition);
+	bool Effect(Entity* owner, string condition);
 };
 class Ring {
 	//环
@@ -94,7 +93,7 @@ public:
 	void Init(int type, int level);
 	float Value(int level);
 	string Discription();
-	void Affect(Entity* owner, string condition);
+	bool Effect(Entity* owner, string condition);
 };
 class MagicStone {
 public:
@@ -109,7 +108,7 @@ public:
 	void Init(int type, int x, int y);
 	string Discription();
 	string ShortDiscription();
-	void Affect(Entity* owner, string condition);
+	bool Effect(Entity* owner, string condition);
 };
 class Skill {
 public:
@@ -178,6 +177,7 @@ public:
 	void Minus(int n);
 	void Click(int n, float p);
 	float P(int n);
+	float RingEffect(int i);
 	float Attribute(int i);
 	bool HasStatus(string statusName);
 	void StatusTime();

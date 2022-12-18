@@ -8,6 +8,7 @@ extern bool openmouse;
 extern int cursuit, curplace;
 extern RelicInfo 遗迹;
 extern InputInfo inputs[5][4];
+extern fstream timeLine;
 Status mem("");
 
 void InputInfo::Clear() {
@@ -45,7 +46,6 @@ Status::Status(Skill* skill, Entity* src) {
 	每层数值 = value;
 	当前层数 = 0;
 	最大层数 = skill->最大层数;
-	允许状态效果 = src->阵营;
 	附加者 = src;
 }
 Status::Status(EquipEffect content, Entity* src) {
@@ -60,12 +60,15 @@ Status::Status(EquipEffect content, Entity* src) {
 	每层数值 = value;
 	当前层数 = 0;
 	最大层数 = content.最大层数;
-	允许状态效果 = src->阵营;
 	附加者 = src;
 }
 int Status::Value() {
 	//给出状态数值
+	bool 允许状态效果 =
+		附加者 == NULL ? 0 :
+		附加者->阵营 == 1 ? 1 : 0;
 	int ret =  每层数值 * 当前层数 * (1 + 允许状态效果 * 遗迹.遗迹战斗 * 遗迹.遗迹状态效果);
+	if (类型 == hot)ret *= 附加者->回复效果;
 	if (类型 == dot)ret *= 附加者->持续;
 	return ret;
 }
@@ -76,8 +79,8 @@ bool Equip::Load(string src) {
 	file.close();
 	rapidjson::Document dom;
 	dom.Parse(UTF8_2_GBK(json_content).c_str());
-	for (int i = 0; i < dom["装备数据"].Size(); i++) {
-		rapidjson::Value& data = dom["装备数据"][i];
+	for (int i = 0; i < dom.Size(); i++) {
+		rapidjson::Value& data = dom[i];
 		if (src == data["名称"].GetString()) {
 			名称 = data["名称"].GetString();
 			属性[0] = data.HasMember("命中") ? data["命中"].GetFloat() : 0;
@@ -168,7 +171,7 @@ bool Equip::Load(string src) {
 	return "未选择";
 	return 0;
 }
-bool Equip::Affect(Entity* owner, string condition) {
+bool Equip::Effect(Entity* owner, string condition) {
 	//触发装备特效。若触发，返回1.
 	bool ret = 0;
 	for (vector<EquipEffect>::iterator i = 装备特效.begin(); i != 装备特效.end(); i++) {
@@ -329,8 +332,21 @@ string Ring::Discription() {
 	}
 	return "未选择";
 }
-void Ring::Affect(Entity* owner, string condition) {
-
+bool Ring::Effect(Entity* owner, string condition) {
+	if (condition == "战斗开始") {
+		if (类型 == 减疗伤害火环 || 类型 == 减疗命中火环 || 类型 == 减疗持续火环) owner->面板治疗效果 *= 0.7;
+		if (类型 == 自杀伤害火环 || 类型 == 自杀命中火环 || 类型 == 自杀持续火环) {
+			Status status("火环自杀");
+			status.特效名称 = "炎之环";
+			status.类型 = dot;
+			status.剩余时间 = -1;
+			status.每层数值 = owner->体质 * 0.75;
+			status.最大层数 = 1;
+			status.附加者 == NULL;
+			owner->Attached(status);
+		}
+	}
+	return 0;
 }
 
 void MagicStone::Init(int type, int x, int y) {
@@ -394,8 +410,64 @@ string MagicStone::Discription() {
 	}
 	return "未选择";
 }
-void MagicStone::Affect(Entity* owner, string condition) {
-
+bool MagicStone::Effect(Entity* owner, string condition) {
+	if (类型 == 增幅暴君 && condition == "发动物理攻击" && Rand(0.01 * 概率)) {
+		owner->增幅力量 += Int(owner->力量 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 连击暴君 && condition == "发动物理攻击" && Rand(0.01 * 概率)) {
+		owner->冷却时间增加 = -4;
+		return 1;
+	}
+	if (类型 == 增幅古精灵 && condition == "发动魔法攻击" && Rand(0.01 * 概率)) {
+		owner->增幅魔力 += Int(owner->魔力 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 魔法盾古精灵 && condition == "受到魔法攻击" && Rand(0.01 * 概率)) {
+		owner->增幅抗性 += Int(owner->魔力 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 回复巧手乌鸦 && condition == "使用回复技能" && Rand(0.01 * 概率)) {
+		owner->增幅技巧 += Int(owner->技巧 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 物攻巧手乌鸦 && condition == "发动物理攻击" && Rand(0.01 * 概率)) {
+		owner->增幅技巧 += Int(owner->技巧 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 魔攻巧手乌鸦 && condition == "发动魔法攻击" && Rand(0.01 * 概率)) {
+		owner->增幅技巧 += Int(owner->技巧 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 速攻猎神 && condition == "发动物理攻击" && Rand(0.01 * 概率)) {
+		owner->增幅速度 += Int(owner->速度 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 物理矫捷猎神 && condition == "受到物理攻击" && Rand(0.01 * 概率)) {
+		owner->增幅护甲 += Int(owner->速度 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 魔法矫捷猎神 && condition == "受到魔法攻击" && Rand(0.01 * 概率)) {
+		owner->增幅抗性 += Int(owner->速度 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 物理守护巨龙 && condition == "受到物理攻击" && Rand(0.01 * 概率)) {
+		owner->增幅护甲 += Int(owner->护甲 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 魔法守护巨龙 && condition == "受到魔法攻击" && Rand(0.01 * 概率)) {
+		owner->增幅抗性 += Int(owner->抗性 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 物理强健巨龙 && condition == "受到物理攻击" && Rand(0.01 * 概率)) {
+		owner->增幅护甲 += Int(owner->体质 * 0.01 * 数值);
+		return 1;
+	}
+	if (类型 == 魔法强健巨龙 && condition == "受到魔法攻击" && Rand(0.01 * 概率)) {
+		owner->增幅抗性 += Int(owner->体质 * 0.01 * 数值);
+		return 1;
+	}
+	return 0;
 }
 
 Entity::Entity() {
@@ -468,7 +540,7 @@ void Entity::Init(int place){
 	面板暴击率 += inputs[cursuit][place].战利品[8] / 100;
 	面板回复效果 += inputs[cursuit][place].战利品[9] / 100;
 	冷却时间增加 = 0;
-	冷却等待时间 = 0; if (inputs[cursuit][place].先发 == 1)冷却等待时间 = 4.5;
+	冷却等待时间 = 0; if (inputs[cursuit][place].先发 == 1 || 魔石.类型 == 先发猎神)冷却等待时间 = 4.5;
 	循环模式 = 默认施放;
 	上个技能 = ""; 
 	当前生命值 = 体质 * 10;
@@ -488,28 +560,28 @@ bool Entity::LoadHero(string src) {
 	file.close();
 	rapidjson::Document dom;
 	dom.Parse(UTF8_2_GBK(json_content).c_str());
-	for (int i = 0; i < dom["冒险者数据"].Size(); i++) {
-		if (src == dom["冒险者数据"][i]["名称"].GetString()) {
-			技能.clear();
-			for (int j = 0; j < dom["冒险者数据"][i]["技能"].Size(); j++) {
-				rapidjson::Value& data = dom["冒险者数据"][i]["技能"][j];
-				Skill tempSkill;
-				tempSkill.名称 = data.HasMember("名称") ? data["名称"].GetString() : "";
-				tempSkill.等级 = data.HasMember("等级") ? data["等级"].GetInt() : 0;
-				tempSkill.对象 = data.HasMember("对象") ? data["对象"].GetString() : "对自身";
-				tempSkill.常数 = data.HasMember("常数") ? data["常数"].GetInt() : 0;
-				tempSkill.系数[0] = data.HasMember("力量系数") ? data["力量系数"].GetFloat() : 0;
-				tempSkill.系数[1] = data.HasMember("魔力系数") ? data["魔力系数"].GetFloat() : 0;
-				tempSkill.系数[2] = data.HasMember("技巧系数") ? data["技巧系数"].GetFloat() : 0;
-				tempSkill.系数[3] = data.HasMember("速度系数") ? data["速度系数"].GetFloat() : 0;
-				tempSkill.系数[4] = data.HasMember("体质系数") ? data["体质系数"].GetFloat() : 0;
-				tempSkill.系数[5] = data.HasMember("护甲系数") ? data["护甲系数"].GetFloat() : 0;
-				tempSkill.系数[6] = data.HasMember("抗性系数") ? data["抗性系数"].GetFloat() : 0;
-				tempSkill.系数[7] = data.HasMember("武威系数") ? data["武威系数"].GetFloat() : 1;
-				tempSkill.伤害类型 = data.HasMember("伤害类型") ? data["伤害类型"].GetString() : "";
-				tempSkill.概率 = data.HasMember("概率") ? data["概率"].GetFloat() : 0;
-				tempSkill.状态名称 = data.HasMember("状态名称") ? data["状态名称"].GetString() : "";
-				tempSkill.状态类型 = !data.HasMember("状态类型") ? -1 :
+	for (int i = 0; i < dom.Size(); i++) {
+		if (src == dom[i]["名称"].GetString()) {
+			技能.clear(); 
+			for (int j = 0; j < dom[i]["技能"].Size(); j++) {
+				rapidjson::Value& data = dom[i]["技能"][j];
+				Skill skill;
+				skill.名称 = data.HasMember("名称") ? data["名称"].GetString() : "";
+				skill.等级 = data.HasMember("等级") ? data["等级"].GetInt() : 0;
+				skill.对象 = data.HasMember("对象") ? data["对象"].GetString() : "对自身";
+				skill.常数 = data.HasMember("常数") ? data["常数"].GetInt() : 0;
+				skill.系数[0] = data.HasMember("力量系数") ? data["力量系数"].GetFloat() : 0;
+				skill.系数[1] = data.HasMember("魔力系数") ? data["魔力系数"].GetFloat() : 0;
+				skill.系数[2] = data.HasMember("技巧系数") ? data["技巧系数"].GetFloat() : 0;
+				skill.系数[3] = data.HasMember("速度系数") ? data["速度系数"].GetFloat() : 0;
+				skill.系数[4] = data.HasMember("体质系数") ? data["体质系数"].GetFloat() : 0;
+				skill.系数[5] = data.HasMember("护甲系数") ? data["护甲系数"].GetFloat() : 0;
+				skill.系数[6] = data.HasMember("抗性系数") ? data["抗性系数"].GetFloat() : 0;
+				skill.系数[7] = data.HasMember("武威系数") ? data["武威系数"].GetFloat() : 1;
+				skill.伤害类型 = data.HasMember("伤害类型") ? data["伤害类型"].GetString() : "";
+				skill.概率 = data.HasMember("概率") ? data["概率"].GetFloat() : 0;
+				skill.状态名称 = data.HasMember("状态名称") ? data["状态名称"].GetString() : "";
+				skill.状态类型 = !data.HasMember("状态类型") ? -1 :
 					string(data["状态类型"].GetString()) == "力量buff" ? 力量buff :
 					string(data["状态类型"].GetString()) == "魔力buff" ? 魔力buff :
 					string(data["状态类型"].GetString()) == "技巧buff" ? 技巧buff :
@@ -523,26 +595,26 @@ bool Entity::LoadHero(string src) {
 					string(data["状态类型"].GetString()) == "眩晕" ? 眩晕 :
 					string(data["状态类型"].GetString()) == "物理承伤" ? 物理承伤 :
 					string(data["状态类型"].GetString()) == "魔法承伤" ? 魔法承伤 : -1;
-				tempSkill.状态常数 = data.HasMember("常数") ? data["常数"].GetInt() : 0;
-				tempSkill.状态系数[0] = data.HasMember("状态力量系数") ? data["状态力量系数"].GetFloat() : 0;
-				tempSkill.状态系数[1] = data.HasMember("状态魔力系数") ? data["状态魔力系数"].GetFloat() : 0;
-				tempSkill.状态系数[2] = data.HasMember("状态技巧系数") ? data["状态技巧系数"].GetFloat() : 0;
-				tempSkill.状态系数[3] = data.HasMember("状态速度系数") ? data["状态速度系数"].GetFloat() : 0;
-				tempSkill.状态系数[4] = data.HasMember("状态体质系数") ? data["状态体质系数"].GetFloat() : 0;
-				tempSkill.状态系数[5] = data.HasMember("状态护甲系数") ? data["状态护甲系数"].GetFloat() : 0;
-				tempSkill.状态系数[6] = data.HasMember("状态抗性系数") ? data["状态抗性系数"].GetFloat() : 0;
-				tempSkill.状态系数[7] = data.HasMember("状态武威系数") ? data["状态武威系数"].GetFloat() : 1;
-				tempSkill.持续时间 = data.HasMember("状态持续时间") ? data["状态持续时间"].GetFloat() : -1;
-				tempSkill.最大层数 = data.HasMember("状态最大层数") ? data["状态最大层数"].GetInt() : 1;
-				tempSkill.基础命中率 = data.HasMember("基础命中率") ? data["基础命中率"].GetFloat() : 0;
-				tempSkill.基础暴击率 = data.HasMember("基础暴击率") ? data["基础暴击率"].GetFloat() : -1;
-				tempSkill.额外伤害种族 = data.HasMember("额外伤害种族") ? data["额外伤害种族"].GetString() : "";
-				tempSkill.额外伤害比例 = data.HasMember("额外伤害比例") ? data["额外伤害比例"].GetFloat() : 0;
-				tempSkill.吸血 = data.HasMember("吸血") ? data["吸血"].GetFloat() : 0;
-				tempSkill.无视嘲讽 = data.HasMember("无视嘲讽") ? data["无视嘲讽"].GetInt() : 0;
-				tempSkill.冷却时间增加 = data.HasMember("冷却时间增加") ? data["冷却时间增加"].GetFloat() : 0;
+				skill.状态常数 = data.HasMember("常数") ? data["常数"].GetInt() : 0;
+				skill.状态系数[0] = data.HasMember("状态力量系数") ? data["状态力量系数"].GetFloat() : 0;
+				skill.状态系数[1] = data.HasMember("状态魔力系数") ? data["状态魔力系数"].GetFloat() : 0;
+				skill.状态系数[2] = data.HasMember("状态技巧系数") ? data["状态技巧系数"].GetFloat() : 0;
+				skill.状态系数[3] = data.HasMember("状态速度系数") ? data["状态速度系数"].GetFloat() : 0;
+				skill.状态系数[4] = data.HasMember("状态体质系数") ? data["状态体质系数"].GetFloat() : 0;
+				skill.状态系数[5] = data.HasMember("状态护甲系数") ? data["状态护甲系数"].GetFloat() : 0;
+				skill.状态系数[6] = data.HasMember("状态抗性系数") ? data["状态抗性系数"].GetFloat() : 0;
+				skill.状态系数[7] = data.HasMember("状态武威系数") ? data["状态武威系数"].GetFloat() : 1;
+				skill.持续时间 = data.HasMember("状态持续时间") ? data["状态持续时间"].GetFloat() : -1;
+				skill.最大层数 = data.HasMember("状态最大层数") ? data["状态最大层数"].GetInt() : 1;
+				skill.基础命中率 = data.HasMember("基础命中率") ? data["基础命中率"].GetFloat() : 0;
+				skill.基础暴击率 = data.HasMember("基础暴击率") ? data["基础暴击率"].GetFloat() : -1;
+				skill.额外伤害种族 = data.HasMember("额外伤害种族") ? data["额外伤害种族"].GetString() : ""; 
+				skill.额外伤害比例 = data.HasMember("额外伤害比例") ? data["额外伤害比例"].GetFloat() : 0;
+				skill.吸血 = data.HasMember("吸血") ? data["吸血"].GetFloat() : 0; 
+				skill.无视嘲讽 = data.HasMember("无视嘲讽") ? data["无视嘲讽"].GetInt() : 0; 
+				skill.冷却时间增加 = data.HasMember("冷却时间增加") ? data["冷却时间增加"].GetFloat() : 0;
 				if (data.HasMember("施放条件")) {
-					tempSkill.施放条件 = 
+					skill.施放条件 = 
 						string(data["施放条件"].GetString()) == "生命少于百分比时施放" ? 生命少于百分比时施放 :
 						string(data["施放条件"].GetString()) == "生命足够多时保持嘲讽" ? 生命足够多时保持嘲讽 :
 						string(data["施放条件"].GetString()) == "经常或始终保持反击" ? 经常或始终保持反击 :
@@ -551,21 +623,76 @@ bool Entity::LoadHero(string src) {
 						string(data["施放条件"].GetString()) == "可设为始终轮流或循环" ? 可设为始终轮流或循环 : -1;
 				}
 				else {
-					tempSkill.施放条件 =
-						(tempSkill.伤害类型 == "回复" && tempSkill.对象 != "对自身") ? 友方生命少于百分比时 :
-						(tempSkill.状态名称 == "嘲讽") ? 生命足够多时保持嘲讽 :
-						(tempSkill.状态名称 == "反击") ? 经常或始终保持反击 :
-						(tempSkill.伤害类型 == "回复" && tempSkill.对象 == "对自身") ? 生命少于百分比时施放 :
-						(tempSkill.对象 == "对敌方全体") ? 至少有多个敌人时施放 :
+					skill.施放条件 =
+						(skill.伤害类型 == "回复" && skill.对象 != "对自身") ? 友方生命少于百分比时 :
+						(skill.状态名称 == "嘲讽") ? 生命足够多时保持嘲讽 :
+						(skill.状态名称 == "反击") ? 经常或始终保持反击 :
+						(skill.伤害类型 == "回复" && skill.对象 == "对自身") ? 生命少于百分比时施放 :
+						(skill.对象 == "对敌方全体") ? 至少有多个敌人时施放 :
 						可设为始终轮流或循环;
 				}
-				if (data.HasMember("技能设置a"))tempSkill.技能设置a = data["技能设置a"].GetInt();
-				if (data.HasMember("技能设置b"))tempSkill.技能设置b = data["技能设置b"].GetInt();
-				技能.push_back(tempSkill);
+				if (data.HasMember("技能设置a"))skill.技能设置a = data["技能设置a"].GetInt();
+				if (data.HasMember("技能设置b"))skill.技能设置b = data["技能设置b"].GetInt();
+				技能.push_back(skill);
 			}
 			return 1;
 		}
 	}
+	return 0;
+}
+float Entity::RingEffect(int i) {
+	int 我方人数 = 0, 敌方人数 = 0;
+	for (int i = 0; i < MAX_GROUP; i++)if (entity[阵营][i].存活 != 0)我方人数++;
+	for (int i = 0; i < MAX_GROUP; i++)if (entity[1 - 阵营][i].存活 != 0)敌方人数++;
+	if (环.类型 == 无限制伤害空环 && i == 物伤编号) return 环.Value(环.特效数值);
+	if (环.类型 == 无限制伤害空环 && i == 魔伤编号) return 环.Value(环.特效数值);
+	if (环.类型 == 无限制命中空环 && i == 命中率编号) return 环.Value(环.特效数值);
+	if (环.类型 == 无限制持续空环 && i == 持续编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人伤害空环 && 敌方人数 >= 2 && i == 物伤编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人伤害空环 && 敌方人数 >= 2 && i == 魔伤编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人命中空环 && 敌方人数 >= 2 && i == 命中率编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人持续空环 && 敌方人数 >= 2 && i == 持续编号) return 环.Value(环.特效数值);
+	if (环.类型 == 孤儿伤害空环 && i == 物伤编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 孤儿伤害空环 && i == 魔伤编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 孤儿命中空环 && i == 命中率编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 孤儿持续空环 && i == 持续编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 无限制治疗水环 && i == 治疗效果编号) return 环.Value(环.特效数值);
+	if (环.类型 == 无限制异常水环 && i == 异常附加率编号) return 环.Value(环.特效数值);
+	if (环.类型 == 无限制闪避水环 && i == 闪避率编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人治疗水环 && 敌方人数 >= 2 && i == 治疗效果编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人异常水环 && 敌方人数 >= 2 && i == 异常附加率编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人闪避水环 && 敌方人数 >= 2 && i == 闪避率编号) return 环.Value(环.特效数值);
+	if (环.类型 == 孤儿治疗水环 && i == 治疗效果编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 孤儿异常水环 && i == 异常附加率编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 孤儿闪避水环 && i == 闪避率编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 承伤伤害火环 && i == 物伤编号) return 环.Value(环.特效数值);
+	if (环.类型 == 承伤伤害火环 && i == 魔伤编号) return 环.Value(环.特效数值);
+	if (环.类型 == 承伤命中火环 && i == 命中率编号) return 环.Value(环.特效数值);
+	if (环.类型 == 承伤持续火环 && i == 持续编号) return 环.Value(环.特效数值);
+	if (环.类型 == 减疗伤害火环 && i == 物伤编号) return 环.Value(环.特效数值);
+	if (环.类型 == 减疗伤害火环 && i == 魔伤编号) return 环.Value(环.特效数值);
+	if (环.类型 == 减疗命中火环 && i == 命中率编号) return 环.Value(环.特效数值);
+	if (环.类型 == 减疗持续火环 && i == 持续编号) return 环.Value(环.特效数值);
+	if (环.类型 == 自杀伤害火环 && i == 物伤编号) return 环.Value(环.特效数值);
+	if (环.类型 == 自杀伤害火环 && i == 魔伤编号) return 环.Value(环.特效数值);
+	if (环.类型 == 自杀命中火环 && i == 命中率编号) return 环.Value(环.特效数值);
+	if (环.类型 == 自杀持续火环 && i == 持续编号) return 环.Value(环.特效数值);
+	if (环.类型 == 无限制物理格挡土环 && i == 物伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 无限制魔法格挡土环 && i == 魔伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 无限制双格挡土环 && i == 物伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 无限制双格挡土环 && i == 魔伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人物理格挡土环 && 敌方人数 >= 2 && i == 物伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人魔法格挡土环 && 敌方人数 >= 2 && i == 魔伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人双格挡土环 && 敌方人数 >= 2 && i == 物伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人双格挡土环 && 敌方人数 >= 2 && i == 魔伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 满生命物理格挡土环 && Int(体质 * 10) == 当前生命值 && i == 物伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 满生命魔法格挡土环 && Int(体质 * 10) == 当前生命值 && i == 魔伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 满生命双格挡土环 && Int(体质 * 10) == 当前生命值 && i == 物伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 满生命双格挡土环 && Int(体质 * 10) == 当前生命值 && i == 魔伤格挡编号) return 环.Value(环.特效数值);
+	if (环.类型 == 孤儿物理格挡土环 && i == 物伤格挡编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 孤儿魔法格挡土环 && i == 魔伤格挡编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 孤儿双格挡土环 && i == 物伤格挡编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 孤儿双格挡土环 && i == 魔伤格挡编号) return (4 - 我方人数) * 环.Value(环.特效数值);
 	return 0;
 }
 float Entity::Attribute(int i) {
@@ -603,7 +730,7 @@ float Entity::Attribute(int i) {
 	if (i == 25)cur = 1.0 + 面板[i] + 增幅[i] + 阵营 * float(遗迹.遗迹吸血效果) / 100;
 	if (i == 26)cur = 1.0 + 面板[i] + 增幅[i] + 阵营 * float(遗迹.遗迹治疗效果) / 100;
 	if (i == 27)cur = 1.0 + 面板[i];
-	return max(cur, float(0));
+	return max(cur + RingEffect(i), float(0));
 }
 void Entity::Attached(Status status) {
 	if (status.类型 == -1) {
@@ -656,8 +783,6 @@ void Entity::Attached(float p, Status status) {
 	}
 }
 void Entity::Attach(string 对象, Status status) {
-	if (status.类型 == hot) status.每层数值 = Int(status.每层数值 * 回复效果);
-	else if (status.类型 == dot) status.每层数值 = Int(status.每层数值 * 持续);
 	if (对象 == "对敌方单体") {
 		entity[1 - 阵营][敌方目标].Attached(status);
 	}
@@ -679,8 +804,6 @@ void Entity::Attach(string 对象, Status status) {
 	}
 }
 void Entity::Attach(float p, string 对象, Status status) {
-	if (status.类型 == hot) status.每层数值 = Int(status.每层数值 * 回复效果);
-	else if (status.类型 == dot) status.每层数值 = Int(status.每层数值 * 持续);
 	if (对象 == "对敌方单体") {
 		entity[1 - 阵营][敌方目标].Attached(p, status);
 	}
@@ -703,30 +826,29 @@ void Entity::Attach(float p, string 对象, Status status) {
 }
 void Entity::Prepare(string condition) {
 	if (condition == "在战斗开始时") {
-		环.Affect(this, condition);
-		武器.Affect(this, condition);
-		铠甲.Affect(this, condition);
-		饰品1.Affect(this, condition);
-		饰品2.Affect(this, condition);
-		魔石.Affect(this, condition);
+		环.Effect(this, condition);
+		武器.Effect(this, condition);
+		铠甲.Effect(this, condition);
+		饰品1.Effect(this, condition);
+		饰品2.Effect(this, condition);
+		魔石.Effect(this, condition);
 		return;
 	}
-	环.Affect(this, condition);
-	if (武器.Affect(this, condition)) return;
-	if (铠甲.Affect(this, condition)) return;
-	if (饰品1.Affect(this, condition)) return;
-	if (饰品2.Affect(this, condition)) return;
-	魔石.Affect(this, condition);
+	if (武器.Effect(this, condition)) return;
+	if (铠甲.Effect(this, condition)) return;
+	if (饰品1.Effect(this, condition)) return;
+	if (饰品2.Effect(this, condition)) return;
+	魔石.Effect(this, condition);
 }
 void Entity::Dead() {
 	存活 = 0;
 	//redraw = 1;
 	for (int i = 0; i < MAX_GROUP; i++) {
 		if (entity[1 - 阵营][i].存活 == 1) {
-			entity[1 - 阵营][i].面板治疗效果 /= (1 - 武器.属性[17]);
-			entity[1 - 阵营][i].面板治疗效果 /= (1 - 铠甲.属性[17]);
-			entity[1 - 阵营][i].面板治疗效果 /= (1 - 饰品1.属性[17]);
-			entity[1 - 阵营][i].面板治疗效果 /= (1 - 饰品2.属性[17]);
+			entity[1 - 阵营][i].面板治疗效果 /= (1 - 武器.属性[9]);
+			entity[1 - 阵营][i].面板治疗效果 /= (1 - 铠甲.属性[9]);
+			entity[1 - 阵营][i].面板治疗效果 /= (1 - 饰品1.属性[9]);
+			entity[1 - 阵营][i].面板治疗效果 /= (1 - 饰品2.属性[9]);
 		}
 	}
 	if (遗迹.遗迹战斗) {
@@ -758,7 +880,7 @@ int  Entity::Attacked(int harm, string type, int oppoplace, float oppoignore, fl
 			Prepare("在受到物理攻击的瞬间");
 			damage = Int(harm * 50.0 / (50 + max(int(护甲 - Int(oppoignore)), 0)));
 			For(状态, it) if ((*it).类型 == 物理承伤)damage = Int(damage * ((*it).Value() + 1));
-			damage = Int(damage * 挨打效果);
+			if(环.类型 == 承伤伤害火环 || 环.类型 == 承伤命中火环 || 环.类型 == 承伤持续火环)damage = Int(damage * 1.3);
 			damage -= 物伤格挡;
 			damage = max(damage, 1);
 			//HarmAdd(damage, 1);
@@ -767,7 +889,7 @@ int  Entity::Attacked(int harm, string type, int oppoplace, float oppoignore, fl
 			Prepare("在受到魔法攻击的瞬间");
 			damage = Int(harm * 50.0 / (50 + max(int(抗性 - Int(oppoignore)), 0)));
 			For(状态, it) if ((*it).类型 == 魔法承伤)damage = Int(damage * ((*it).Value() + 1));
-			damage = Int(damage * 挨打效果);
+			if (环.类型 == 承伤伤害火环 || 环.类型 == 承伤命中火环 || 环.类型 == 承伤持续火环)damage = Int(damage * 1.3);
 			damage -= 魔伤格挡;
 			damage = max(damage, 1);
 			//HarmAdd(damage, 2);
@@ -787,7 +909,7 @@ int  Entity::Attacked(int harm, string type, int oppoplace, float oppoignore, fl
 			Prepare("受到物理攻击");
 			damage = Int(harm * 50.0 / (50 + max(int(护甲 - Int(oppoignore)), 0)));
 			For(状态, it) if ((*it).类型 ==物理承伤)damage = Int(damage * ((*it).Value() + 1));
-			damage = Int(damage * 挨打效果);
+			if (环.类型 == 承伤伤害火环 || 环.类型 == 承伤命中火环 || 环.类型 == 承伤持续火环)damage = Int(damage * 1.3);
 			damage -= 物伤格挡;
 			damage = max(damage, 1);
 			//HarmAdd(damage, 1);
@@ -796,7 +918,7 @@ int  Entity::Attacked(int harm, string type, int oppoplace, float oppoignore, fl
 			Prepare("受到魔法攻击");
 			damage = Int(harm * 50.0 / (50 + max(int(抗性 - Int(oppoignore)), 0)));
 			For(状态, it) if ((*it).类型 == 魔法承伤)damage = Int(damage * ((*it).Value() + 1));
-			damage = Int(damage * 挨打效果);
+			if (环.类型 == 承伤伤害火环 || 环.类型 == 承伤命中火环 || 环.类型 == 承伤持续火环)damage = Int(damage * 1.3);
 			damage -= 魔伤格挡;
 			damage = max(damage, 1);
 			//HarmAdd(damage, 2);
@@ -828,7 +950,7 @@ void Entity::SkillTime() {
 	if (HasStatus("眩晕"))return;
 	冷却等待时间 += plank;
 	float 卸负后力量 = max(力量 - 卸负, 1.0);
-	float 力速比 = min(float(int(卸负后力量 * 10.0 / 速度)) / 10, 3.0);
+	float 力速比 = min(float(int(卸负后力量 * 10.0 / (速度 + 1))) / 10, 3.0);
 	float curcd = max(1.5 + 力速比 + 冷却时间增加, 0.5);
 	if (Int(冷却等待时间 / plank) < Int(curcd / plank)) return;
 	
@@ -1139,7 +1261,9 @@ void Skill::TargetSelect(Entity* owner) {
 	}
 }
 void Skill::Release(Entity* owner) {
+	if (timeLine.is_open())timeLine << "    " << owner->名称 << " 施放技能 " << 名称 << endl;
 	mem.名称 = "";
+	owner->冷却时间增加 = 0;
 	if (伤害类型 == "物理伤害")owner->Prepare("发动物理攻击");
 	if (伤害类型 == "魔法伤害")owner->Prepare("发动魔法攻击");
 	if (伤害类型 == "回复")owner->Prepare("使用回复技能");
@@ -1225,7 +1349,23 @@ void Skill::Release(Entity* owner) {
 	}
 	if (状态名称 != "" && Equal(概率, -1)) { owner->Attached(status0); owner->Attached(status); }
 	if (mem.名称 != "") owner->Attach(对象, mem);
+	if(!Equal(owner->冷却时间增加,-4)) owner->冷却时间增加 = 冷却时间增加;
+	cout << owner->名称 << owner->冷却时间增加 << 冷却时间增加 << endl;
 	for (int i = 0; i < 28; i++)owner->增幅[i] = 0;
+	if (timeLine.is_open() && (伤害类型 == "物理伤害" || 伤害类型 == "魔法伤害")) {
+		timeLine << "        当前生命值：";
+		for (int i = 0; i < MAX_GROUP; i++) {
+			if (entity[1 - owner->阵营][i].存活 != 0) timeLine << entity[1 - owner->阵营][i].名称 << entity[1 - owner->阵营][i].当前生命值 << "  ";
+		}
+		timeLine << endl;
+	}
+	if (timeLine.is_open() && 伤害类型 == "回复") {
+		timeLine << "        当前生命值：";
+		for (int i = 0; i < MAX_GROUP; i++) {
+			if (entity[owner->阵营][i].存活 != 0) timeLine << entity[owner->阵营][i].名称 << entity[owner->阵营][i].当前生命值 << "  ";
+		}
+		timeLine << endl;
+	}
 }
 string Skill::Discription(int index) {
 	//返回技能设置的描述，和游戏里一模一样。
@@ -1367,7 +1507,7 @@ string ReadEquipAbbr(string abbr) {
 	file.close();
 	rapidjson::Document dom;
 	dom.Parse(UTF8_2_GBK(json_content).c_str());
-	rapidjson::Value& data = dom["装备数据"];
+	rapidjson::Value& data = dom;
 	for (int i = 0; i < data.Size(); i++) {
 		for (int j = 0; j < data[i]["简称"].Size(); j++) {
 			if (abbr == string(data[i]["简称"][j].GetString())) {
@@ -1383,7 +1523,7 @@ string ReadMonsterAbbr(string abbr) {
 	file.close();
 	rapidjson::Document dom;
 	dom.Parse(UTF8_2_GBK(json_content).c_str());
-	rapidjson::Value& data = dom["怪物数据"];
+	rapidjson::Value& data = dom;
 	for (int i = 0; i < data.Size(); i++) {
 		for (int j = 0; j < data[i]["简称"].Size(); j++) {
 			if (abbr == string(data[i]["简称"][j].GetString())) {
@@ -1394,15 +1534,159 @@ string ReadMonsterAbbr(string abbr) {
 	return "";
 }
 void LoadMonster(string src) {
+	for (int j = 0; j < MAX_GROUP; j++)entity[0][j].Clear(j);
 	ifstream file("JSON/怪物数据.json");
 	string json_content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
 	file.close();
 	rapidjson::Document dom;
 	dom.Parse(UTF8_2_GBK(json_content).c_str());
-	for (int i = 0; i < dom["怪物数据"].Size(); i++) {
-		if (src == string(dom["怪物数据"][i]["名称"].GetString())) {
-			rapidjson::Value& data = dom["怪物数据"][i];
-			for (int j = 0; j < MAX_GROUP; j++)entity[0][i].Clear(j);
+	for (int i = 0; i < dom.Size(); i++) {
+		if (src == string(dom[i]["名称"].GetString())) {
+			for (int j = 0; j < dom[i]["信息"].Size(); j++) {
+				rapidjson::Value& data = dom[i]["信息"][j];
+				entity[0][j].存活 = 1;
+				entity[0][j].名称 = data["名称"].GetString();
+				entity[0][j].种族 = data.HasMember("种族") ? data["种族"].GetString() : "无种族";
+				entity[0][j].面板[0] = data.HasMember("力量") ? data["力量"].GetInt() : 0;
+				entity[0][j].面板[1] = data.HasMember("魔力") ? data["魔力"].GetInt() : 0;
+				entity[0][j].面板[2] = data.HasMember("技巧") ? data["技巧"].GetInt() : 0;
+				entity[0][j].面板[3] = data.HasMember("速度") ? data["速度"].GetInt() : 0;
+				entity[0][j].面板[4] = data.HasMember("体质") ? data["体质"].GetInt() : 0;
+				entity[0][j].面板[5] = data.HasMember("护甲") ? data["护甲"].GetInt() : 0;
+				entity[0][j].面板[6] = data.HasMember("抗性") ? data["抗性"].GetInt() : 0;
+				entity[0][j].面板[7] = data.HasMember("武威") ? data["武威"].GetInt() : 0;
+				for (int k = 0; k < data["技能"].Size(); k++) {
+					rapidjson::Value& dat = data["技能"][k];
+					Skill skill;
+					skill.名称 = dat.HasMember("名称") ? dat["名称"].GetString() : "";
+					skill.等级 = dat.HasMember("等级") ? dat["等级"].GetInt() : 0;
+					skill.对象 = dat.HasMember("对象") ? dat["对象"].GetString() : "对自身";
+					skill.常数 = dat.HasMember("常数") ? dat["常数"].GetInt() : 0;
+					skill.系数[0] = dat.HasMember("力量系数") ? dat["力量系数"].GetFloat() : 0;
+					skill.系数[1] = dat.HasMember("魔力系数") ? dat["魔力系数"].GetFloat() : 0;
+					skill.系数[2] = dat.HasMember("技巧系数") ? dat["技巧系数"].GetFloat() : 0;
+					skill.系数[3] = dat.HasMember("速度系数") ? dat["速度系数"].GetFloat() : 0;
+					skill.系数[4] = dat.HasMember("体质系数") ? dat["体质系数"].GetFloat() : 0;
+					skill.系数[5] = dat.HasMember("护甲系数") ? dat["护甲系数"].GetFloat() : 0;
+					skill.系数[6] = dat.HasMember("抗性系数") ? dat["抗性系数"].GetFloat() : 0;
+					skill.系数[7] = dat.HasMember("武威系数") ? dat["武威系数"].GetFloat() : 1;
+					skill.伤害类型 = dat.HasMember("伤害类型") ? dat["伤害类型"].GetString() : "";
+					skill.概率 = dat.HasMember("概率") ? dat["概率"].GetFloat() : 0;
+					skill.状态名称 = dat.HasMember("状态名称") ? dat["状态名称"].GetString() : "";
+					skill.状态类型 = !dat.HasMember("状态类型") ? -1 :
+						string(dat["状态类型"].GetString()) == "力量buff" ? 力量buff :
+						string(dat["状态类型"].GetString()) == "魔力buff" ? 魔力buff :
+						string(dat["状态类型"].GetString()) == "技巧buff" ? 技巧buff :
+						string(dat["状态类型"].GetString()) == "速度buff" ? 速度buff :
+						string(dat["状态类型"].GetString()) == "体质buff" ? 体质buff :
+						string(dat["状态类型"].GetString()) == "护甲buff" ? 护甲buff :
+						string(dat["状态类型"].GetString()) == "抗性buff" ? 抗性buff :
+						string(dat["状态类型"].GetString()) == "dot" ? dot :
+						string(dat["状态类型"].GetString()) == "hot" ? hot :
+						string(dat["状态类型"].GetString()) == "反伤" ? 反伤 :
+						string(dat["状态类型"].GetString()) == "眩晕" ? 眩晕 :
+						string(dat["状态类型"].GetString()) == "物理承伤" ? 物理承伤 :
+						string(dat["状态类型"].GetString()) == "魔法承伤" ? 魔法承伤 : -1;
+					skill.状态常数 = dat.HasMember("常数") ? dat["常数"].GetInt() : 0;
+					skill.状态系数[0] = dat.HasMember("状态力量系数") ? dat["状态力量系数"].GetFloat() : 0;
+					skill.状态系数[1] = dat.HasMember("状态魔力系数") ? dat["状态魔力系数"].GetFloat() : 0;
+					skill.状态系数[2] = dat.HasMember("状态技巧系数") ? dat["状态技巧系数"].GetFloat() : 0;
+					skill.状态系数[3] = dat.HasMember("状态速度系数") ? dat["状态速度系数"].GetFloat() : 0;
+					skill.状态系数[4] = dat.HasMember("状态体质系数") ? dat["状态体质系数"].GetFloat() : 0;
+					skill.状态系数[5] = dat.HasMember("状态护甲系数") ? dat["状态护甲系数"].GetFloat() : 0;
+					skill.状态系数[6] = dat.HasMember("状态抗性系数") ? dat["状态抗性系数"].GetFloat() : 0;
+					skill.状态系数[7] = dat.HasMember("状态武威系数") ? dat["状态武威系数"].GetFloat() : 1;
+					skill.持续时间 = dat.HasMember("状态持续时间") ? dat["状态持续时间"].GetFloat() : -1;
+					skill.最大层数 = dat.HasMember("状态最大层数") ? dat["状态最大层数"].GetInt() : 1;
+					skill.基础命中率 = dat.HasMember("基础命中率") ? dat["基础命中率"].GetFloat() : 0;
+					skill.基础暴击率 = dat.HasMember("基础暴击率") ? dat["基础暴击率"].GetFloat() : -1;
+					skill.额外伤害种族 = dat.HasMember("额外伤害种族") ? dat["额外伤害种族"].GetString() : "";
+					skill.额外伤害比例 = dat.HasMember("额外伤害比例") ? dat["额外伤害比例"].GetFloat() : 0;
+					skill.吸血 = dat.HasMember("吸血") ? dat["吸血"].GetFloat() : 0;
+					skill.无视嘲讽 = dat.HasMember("无视嘲讽") ? dat["无视嘲讽"].GetInt() : 0;
+					skill.冷却时间增加 = dat.HasMember("冷却时间增加") ? dat["冷却时间增加"].GetFloat() : 0;
+					skill.施放条件 =
+						!dat.HasMember("施放条件") ? 可设为始终轮流或循环 :
+						string(dat["施放条件"].GetString()) == "生命少于百分比时施放" ? 生命少于百分比时施放 :
+						string(dat["施放条件"].GetString()) == "生命足够多时保持嘲讽" ? 生命足够多时保持嘲讽 :
+						string(dat["施放条件"].GetString()) == "经常或始终保持反击" ? 经常或始终保持反击 :
+						string(dat["施放条件"].GetString()) == "友方生命少于百分比时" ? 友方生命少于百分比时 :
+						string(dat["施放条件"].GetString()) == "至少有多个敌人时施放" ? 至少有多个敌人时施放 :
+						string(dat["施放条件"].GetString()) == "可设为始终轮流或循环" ? 可设为始终轮流或循环 : -1;
+					skill.技能设置a = dat.HasMember("技能设置") ? dat["技能设置"].GetInt() : dat.HasMember("技能设置a") ? dat["技能设置a"].GetInt() : 1;
+					skill.技能设置b = dat.HasMember("技能设置b") ? dat["技能设置b"].GetInt() : 1;
+					entity[0][j].技能.push_back(skill);
+				}
+				if (data.HasMember("狂暴技能")) {
+					rapidjson::Value& dat = data["狂暴技能"];
+					if (dat.HasMember("免疫")) {
+						for (int k = 0; k < dat["免疫"].Size(); k++) {
+							entity[0][j].免疫.push_back(dat["免疫"][k].GetString());
+						}
+					}
+					entity[0][j].面板无视护甲 = dat.HasMember("无视护甲") ? dat["无视护甲"].GetInt() : 0;
+					entity[0][j].面板无视抗性 = dat.HasMember("无视抗性") ? dat["无视抗性"].GetInt() : 0;
+					entity[0][j].狂暴技能.类型 = dat.HasMember("类型") ? dat["类型"].GetString() : "";
+					entity[0][j].狂暴技能.首次施放时间 = dat.HasMember("首次施放时间") ? dat["首次施放时间"].GetInt() : -1;
+					entity[0][j].狂暴技能.内容.冷却时间增加 = dat.HasMember("施放时间间隔") ? dat["施放时间间隔"].GetFloat() : -1;
+					entity[0][j].狂暴技能.内容.名称 = dat.HasMember("名称") ? dat["名称"].GetString() : "";
+					entity[0][j].狂暴技能.内容.等级 = dat.HasMember("等级") ? dat["等级"].GetInt() : 0;
+					entity[0][j].狂暴技能.内容.对象 = dat.HasMember("对象") ? dat["对象"].GetString() : "对自身";
+					entity[0][j].狂暴技能.内容.常数 = dat.HasMember("常数") ? dat["常数"].GetInt() : 0;
+					entity[0][j].狂暴技能.内容.系数[0] = dat.HasMember("力量系数") ? dat["力量系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.系数[1] = dat.HasMember("魔力系数") ? dat["魔力系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.系数[2] = dat.HasMember("技巧系数") ? dat["技巧系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.系数[3] = dat.HasMember("速度系数") ? dat["速度系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.系数[4] = dat.HasMember("体质系数") ? dat["体质系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.系数[5] = dat.HasMember("护甲系数") ? dat["护甲系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.系数[6] = dat.HasMember("抗性系数") ? dat["抗性系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.系数[7] = dat.HasMember("武威系数") ? dat["武威系数"].GetFloat() : 1;
+					entity[0][j].狂暴技能.内容.伤害类型 = dat.HasMember("伤害类型") ? dat["伤害类型"].GetString() : "";
+					entity[0][j].狂暴技能.内容.概率 = dat.HasMember("概率") ? dat["概率"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.状态名称 = dat.HasMember("状态名称") ? dat["状态名称"].GetString() : "";
+					entity[0][j].狂暴技能.内容.状态类型 = !dat.HasMember("状态类型") ? -1 :
+						string(dat["状态类型"].GetString()) == "力量buff" ? 力量buff :
+						string(dat["状态类型"].GetString()) == "魔力buff" ? 魔力buff :
+						string(dat["状态类型"].GetString()) == "技巧buff" ? 技巧buff :
+						string(dat["状态类型"].GetString()) == "速度buff" ? 速度buff :
+						string(dat["状态类型"].GetString()) == "体质buff" ? 体质buff :
+						string(dat["状态类型"].GetString()) == "护甲buff" ? 护甲buff :
+						string(dat["状态类型"].GetString()) == "抗性buff" ? 抗性buff :
+						string(dat["状态类型"].GetString()) == "dot" ? dot :
+						string(dat["状态类型"].GetString()) == "hot" ? hot :
+						string(dat["状态类型"].GetString()) == "反伤" ? 反伤 :
+						string(dat["状态类型"].GetString()) == "眩晕" ? 眩晕 :
+						string(dat["状态类型"].GetString()) == "物理承伤" ? 物理承伤 :
+						string(dat["状态类型"].GetString()) == "魔法承伤" ? 魔法承伤 : -1;
+					entity[0][j].狂暴技能.内容.状态常数 = dat.HasMember("常数") ? dat["常数"].GetInt() : 0;
+					entity[0][j].狂暴技能.内容.状态系数[0] = dat.HasMember("状态力量系数") ? dat["状态力量系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.状态系数[1] = dat.HasMember("状态魔力系数") ? dat["状态魔力系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.状态系数[2] = dat.HasMember("状态技巧系数") ? dat["状态技巧系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.状态系数[3] = dat.HasMember("状态速度系数") ? dat["状态速度系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.状态系数[4] = dat.HasMember("状态体质系数") ? dat["状态体质系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.状态系数[5] = dat.HasMember("状态护甲系数") ? dat["状态护甲系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.状态系数[6] = dat.HasMember("状态抗性系数") ? dat["状态抗性系数"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.状态系数[7] = dat.HasMember("状态武威系数") ? dat["状态武威系数"].GetFloat() : 1;
+					entity[0][j].狂暴技能.内容.持续时间 = dat.HasMember("状态持续时间") ? dat["状态持续时间"].GetFloat() : -1;
+					entity[0][j].狂暴技能.内容.最大层数 = dat.HasMember("状态最大层数") ? dat["状态最大层数"].GetInt() : 1;
+					entity[0][j].狂暴技能.内容.基础命中率 = dat.HasMember("基础命中率") ? dat["基础命中率"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.基础暴击率 = dat.HasMember("基础暴击率") ? dat["基础暴击率"].GetFloat() : -1;
+					entity[0][j].狂暴技能.内容.额外伤害种族 = dat.HasMember("额外伤害种族") ? dat["额外伤害种族"].GetString() : "";
+					entity[0][j].狂暴技能.内容.额外伤害比例 = dat.HasMember("额外伤害比例") ? dat["额外伤害比例"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.吸血 = dat.HasMember("吸血") ? dat["吸血"].GetFloat() : 0;
+					entity[0][j].狂暴技能.内容.无视嘲讽 = dat.HasMember("无视嘲讽") ? dat["无视嘲讽"].GetInt() : 0;
+					entity[0][j].狂暴技能.内容.施放条件 =
+						!dat.HasMember("施放条件") ? 可设为始终轮流或循环 :
+						string(dat["施放条件"].GetString()) == "生命少于百分比时施放" ? 生命少于百分比时施放 :
+						string(dat["施放条件"].GetString()) == "生命足够多时保持嘲讽" ? 生命足够多时保持嘲讽 :
+						string(dat["施放条件"].GetString()) == "经常或始终保持反击" ? 经常或始终保持反击 :
+						string(dat["施放条件"].GetString()) == "友方生命少于百分比时" ? 友方生命少于百分比时 :
+						string(dat["施放条件"].GetString()) == "至少有多个敌人时施放" ? 至少有多个敌人时施放 :
+						string(dat["施放条件"].GetString()) == "可设为始终轮流或循环" ? 可设为始终轮流或循环 : -1;
+					entity[0][j].狂暴技能.内容.技能设置a = dat.HasMember("技能设置") ? dat["技能设置"].GetInt() : dat.HasMember("技能设置a") ? dat["技能设置a"].GetInt() : 1;
+					entity[0][j].狂暴技能.内容.技能设置b = dat.HasMember("技能设置b") ? dat["技能设置b"].GetInt() : 1;
+				}
+			}
 		}
 	}
 }
