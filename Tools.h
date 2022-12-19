@@ -9,6 +9,7 @@ string UTF8_2_GBK(string utf8Str);
 
 //浮点数转int,不用担心精度问题
 int Int(float a);
+float Float(float a);
 //不用担心精度地把浮点数转string
 string FloatTran(float src);
 //不用担心精度比较浮点数相等
@@ -37,7 +38,8 @@ bool InBox(int mouse_x, int mouse_y, int l, int u, int r, int d);
 void Order();
 //以p的概率随机决定事件是否发生
 bool Rand(float p);
-
+string Time(float t);
+int End();
 
 void GetInput();//获取保存的队伍输入信息
 void PutInput();//保存当亲的队伍输入信息

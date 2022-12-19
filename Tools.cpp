@@ -177,6 +177,7 @@ void Order() {
 	}
 }
 int Int(float a) {
+	if (a < 0)return a - 0.5;
 	return a + 0.5;
 }
 bool Rand(float p) {
@@ -184,6 +185,33 @@ bool Rand(float p) {
 	if (p <= 0)return false;
 	float g = (rand() % 8192) / 8192.0;
 	return (p >= g);
+}
+string Time(float t) {
+	int f = Int(t * 10) % 10;
+	int s = Int(t) % 60;
+	int m = Int(t) / 60;
+	string ret = "";
+	if (m < 10)ret += "0";
+	ret += FloatTran(m);
+	ret += ":";
+	if (s < 10)ret += "0";
+	ret += FloatTran(s);
+	ret += ".";
+	ret += FloatTran(f);
+	return ret;
+}
+int End() {
+	extern Entity entity[2][MAX_GROUP];
+	bool alive;
+	alive = 0;
+	//for (int i = 0; i < 4; i++)cout << entity[1][i].存活 << " "; cout << endl;
+	for (int i = 0; i < 4; i++)if (entity[1][i].存活 == 1)alive = 1;
+	if (alive == 0)return 2;
+	alive = 0;
+	//for (int i = 0; i < MAX_GROUP; i++)cout << entity[0][i].存活 << " "; cout << endl;
+	for (int i = 0; i < MAX_GROUP; i++)if (entity[0][i].存活 == 1)alive = 1;
+	if (alive == 0)return 1;
+	return 0;
 }
 
 int basex, basey;
@@ -247,6 +275,8 @@ void GetInput() {
 	file >> 遗迹.遗迹治疗效果;
 	file >> 遗迹.遗迹命中率;
 	file >> 遗迹.遗迹暴击率;
+	extern string monster;
+	file >> monster;
 }
 void PutInput() {
 	fstream file;
@@ -286,6 +316,8 @@ void PutInput() {
 	file << 遗迹.遗迹治疗效果 << endl;
 	file << 遗迹.遗迹命中率 << endl;
 	file << 遗迹.遗迹暴击率 << endl;
+	extern string monster;
+	file << monster << endl;
 }
 void GetBase() {
 	fstream infile("Texts/偏移量.txt");

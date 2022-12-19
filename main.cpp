@@ -7,10 +7,10 @@ HDC hdc, hdcApp, hdcEye, hdcGame, hdcDesk;//窗口上的画布
 Entity entity[2][MAX_GROUP]; //entity[0][i]是怪，entity[1][i]是冒险者
 InputInfo inputs[5][4];
 RelicInfo 遗迹;
-fstream timeLine;
+float timeClock; fstream timeLine; bool timePrinted; bool allowInterval = 1;
 int state, curplace, cursuit;//state是当前wiki测试服所处的状态。
 int mouse_x, mouse_y; extern int basex, basey;//mouse_x, mouse_y是鼠标点击的位置。basex, basey与文字识别有关，和计算器无关
-string tstr; int th, th2, th3;//当前正在输入的字符串。
+string monster, tstr; int th, th2, th3;//当前正在输入的字符串。
 void Select() {
 	/*
 	这个函数跟据选择的装备、输入的属性，显示冒险者的各种信息
@@ -122,10 +122,50 @@ void SelectRelic() {
 	StringOut(hdc, 120, 520, "遗 迹 命 中 率：" + FloatTran(遗迹.遗迹命中率) + "%");
 	StringOut(hdc, 120, 560, "遗 迹 暴 击 率：" + FloatTran(遗迹.遗迹暴击率) + "%");
 	TextSelect(hdc, font_monsterSearch, 220, 220, 220);
-	StringOut(hdc, 630 - entity[0][0].名称.length() * 8, 240, entity[0][0].名称);
+	StringOut(hdc, 630 - monster.length() * 8, 208, monster);
 }
 void TxtFight() {
-	
+	allowInterval = 0;
+	for (int i = 0; i < 4; i++)entity[1][i].Init(i);
+	LoadMonster(monster);
+	timeLine.open("Texts/temp.txt", ofstream::out | ofstream::ate);
+	timeLine << "                                                                                                                                                                                                                                                                                                                                                              ";
+	for (int i = 0; i < MAX_GROUP; i++)if (entity[1][i].存活 != 0) entity[1][i].Prepare("战斗开始");
+	timeClock = 0;
+	while(!End() && timeClock <= 3600) {
+		timePrinted = 0;
+		timeClock += plank;
+		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].StatusTime();
+		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[1][i].存活 != 0) entity[1][i].StatusTime();
+		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].SkillTime();
+		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[1][i].存活 != 0) entity[1][i].SkillTime();
+	}
+	timeLine.close();
+	fstream infile, outfile;
+	infile.open("Texts/temp.txt");
+	outfile.open("Texts/时间轴.txt", ofstream::out | ofstream::ate);
+	if (End() == 1)outfile << "VICTORY" << endl << endl;
+	else if (End() == 2) {
+		outfile << "DEFEAT" << endl;
+		//outfile << "    战斗失败原因：" << endl;
+		//outfile << "    致死伤害类型：" << endl;
+		//outfile << "    致死伤害来源：" << endl;
+	}
+	else outfile << "TIME OVER" << endl << endl;
+	outfile << "输出量：" << endl;
+	for (int i = 0; i < 4; i++)if (entity[1][i].名称 != "未选择")outfile << "    " << entity[1][i].名称 << " " << entity[1][i].总伤害 << endl;
+	outfile << "最低血线：" << endl;
+	for (int i = 0; i < 4; i++)if (entity[1][i].名称 != "未选择")outfile << "    " << entity[1][i].名称 << " " << entity[1][i].最低血线 << endl;
+	while (!infile.eof()) {
+		string s;
+		getline(infile, s);
+		outfile << s << endl;
+	}
+	infile.close();
+	outfile.close();
+	remove("Texts/temp.txt");
+	WinExec("notepad.exe Texts/时间轴.txt", SW_SHOW);
+	allowInterval = 1;
 }
 
 void State(int state_) {
@@ -207,7 +247,7 @@ void State(int state_) {
 		StringOut(hdc, 360, 90 + 45 * 9, "回复效果 : ");
 		StringOut(hdc, 360, 90 + 45 * 10, "先    发 : ");
 		TextSelect(hdc, font_zlp2, 200, 200, 200);
-		for(int i=0;i<10;i++)StringOut(hdc, 510, 87 + 45 * i, FloatTran(inputs[cursuit][curplace].战利品[i]) + "%");
+		for (int i = 0; i < 10; i++)StringOut(hdc, 510, 87 + 45 * i, FloatTran(inputs[cursuit][curplace].战利品[i]) + "%");
 		if (inputs[cursuit][curplace].先发 == 0)StringOut(hdc, 510, 87 + 45 * 10, "不带");
 		if (inputs[cursuit][curplace].先发 == 1)StringOut(hdc, 510, 87 + 45 * 10, "带");
 		if (state >= 13) {
@@ -234,26 +274,11 @@ void State(int state_) {
 	if (state == 44) {
 		SelectRelic();
 		PBSelect(hdc, pen_coffee, brush_coffee);
-		Rectangle(hdc, 481, 175, 782, 354);
+		Rectangle(hdc, 481, 175, 782, 280);
 		TextSelect(hdc, font_monsterSearchPoint, 220, 220, 220);
-		TextOut(hdc, 618, 138, TEXT("⇩"), wcslen(TEXT("⇩")));
+		TextOut(hdc, 625, 140, TEXT("⇩"), wcslen(TEXT("⇩")));
 		TextSelect(hdc, font_monsterSearch, 220, 220, 220);
-		StringOut(hdc, 630 - tstr.length() * 8, 240, tstr);
-	}
-	if (state == 45) {
-		timeLine.open("Texts/时间轴.txt", ofstream::out | ofstream::ate);
-		for (int i = 0; i < MAX_GROUP; i++)if (entity[1][i].存活 != 0) entity[1][i].Prepare("战斗开始");
-		float timeLineTime = 0;
-		for (int i = 0; i < 100;i++) {
-			timeLineTime += plank;
-			if(Int(timeLineTime/0.001)%100==0)timeLine << timeLineTime << ":" << endl;
-			for (int i = 0; i < MAX_GROUP; i++)if (entity[0][i].存活 != 0) entity[0][i].StatusTime();
-			for (int i = 0; i < MAX_GROUP; i++)if (entity[1][i].存活 != 0) entity[1][i].StatusTime();
-			for (int i = 0; i < MAX_GROUP; i++)if (entity[0][i].存活 != 0) entity[0][i].SkillTime();
-			for (int i = 0; i < MAX_GROUP; i++)if (entity[1][i].存活 != 0) entity[1][i].SkillTime();
-			timeLine << endl;
-		}
-		timeLine.close();
+		StringOut(hdc, 630 - tstr.length() * 8, 208, tstr);
 	}
 }
 int tempa = 1;
@@ -264,6 +289,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam) 
 	case WM_DESTROY: PostQuitMessage(0); break;
 	case WM_PAINT: {
 		LoadKeyboardLayout(L"0x409", KLF_ACTIVATE | KLF_SETFORPROCESS);
+		Picture(hdcApp, "Pictures/背景/封面.jpg");
+		Sleep(2000);
 		State(0);
 		break;
 	}
@@ -272,8 +299,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam) 
 		if (tempa == 0) { cout << "if (Inbox(" << mouse_x << "," << mouse_y << ","; tempa = 1; }
 		else {
 			cout << mouse_x << "," << mouse_y << ")){  }" << endl; tempa = 0;
-			COLORREF pixel = ::GetPixel(hdc, mouse_x, mouse_y);
-			cout << int(GetRValue(pixel)) << ", " << int(GetGValue(pixel)) << ", " << int(GetBValue(pixel)) << endl;
+		//	COLORREF pixel = ::GetPixel(hdc, mouse_x, mouse_y);
+		//	cout << int(GetRValue(pixel)) << ", " << int(GetGValue(pixel)) << ", " << int(GetBValue(pixel)) << endl;
 		}
 		if (state == 0) {
 			//庇护所大厅
@@ -494,8 +521,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam) 
 			else if (Inbox(109, 475, 341, 510)) { State(41); }
 			else if (Inbox(110, 514, 361, 551)) { State(42); }
 			else if (Inbox(101, 553, 362, 592)) { State(43); }
-			else if (Inbox(484, 178, 784, 352)) { State(44); }
-			else if (Inbox(489, 421, 681, 449)) { State(45); }
+			else if (Inbox(484, 175, 791, 264)) { State(44); }
+			else if (Inbox(514, 325, 666, 365)) { TxtFight(); State(32); }
 			else State(32);
 		}
 		else if (state == 44) {
@@ -607,7 +634,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam) 
 			if (KEY_DOWN(190)|| KEY_DOWN(192))tstr += ".";
 			for (int i = 48; i <= 90; i++) if (KEY_DOWN(i))tstr += i;
 			if (ReadMonsterAbbr(tstr) != "") {
-				LoadMonster(ReadMonsterAbbr(tstr));
+				monster = ReadMonsterAbbr(tstr);
+				LoadMonster(monster);
 			    State(32);
 			}
 			else State(44);
@@ -620,6 +648,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam) 
 	return DefWindowProc(hwnd, uMsg, wparam, lparam);
 }
 int main() {
+	srand(time(0));
 	MoveWindow(GetConsoleWindow(), -5, 0, 416, 727, 1);
 	LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam);
 	HINSTANCE hInstance = GetModuleHandle(NULL);
@@ -648,9 +677,11 @@ int main() {
 	UpdateWindow(hwndApp);
 	MSG msg;
 	while (1) {
-		if (GetMessage(&msg, NULL, 0, 0) == 0)break;
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		if (allowInterval) {
+			if (GetMessage(&msg, NULL, 0, 0) == 0)break;
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
 	}
 	return 0;
 }

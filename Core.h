@@ -70,6 +70,7 @@ public:
 	Status(string name);
 	Status(Skill* skill, Entity* src);
 	Status(EquipEffect content, Entity* src);
+	void Set(EquipEffect content, Entity* src);
 	int Value();
 };
 class Equip {
@@ -116,7 +117,7 @@ public:
 	int 等级;
 
 	string 对象;
-	int 常数; float 系数[10];//力魔技速体甲抗 武威 当前生命值 已损生命值
+	int 常数; float 系数[8];//力魔技速体甲抗 武威 当前生命值 已损生命值
 	string 伤害类型;
 
 	float 概率;
@@ -133,7 +134,7 @@ public:
 
 	int 施放条件, 技能设置a, 技能设置b;
 	void Clear();
-	bool AllowRelease(Entity* owner);
+	int  AllowRelease(Entity* owner);
 	void TargetSelect(Entity* owner);
 	void Release(Entity* owner);
 	string Discription(int index);
@@ -167,6 +168,11 @@ public:
 	vector<Skill> 技能;
 	ViolentSkill 狂暴技能;
 	Equip 武器, 铠甲, 饰品1, 饰品2;	MagicStone 魔石; Ring 环;
+
+	long long int 总伤害;
+	int 最低血线;
+	vector<pair<string, int>> 伤害类型占比;
+	vector<pair<string, int>> 伤害来源占比;
 	
 	Entity();
 	void Clear(int place);
