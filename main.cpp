@@ -29,7 +29,7 @@ void Select() {
 	StringOut(hdc, 188 - inputs[cursuit][curplace].职业.length() * 8, 9, inputs[cursuit][curplace].职业);
 	TextOut(hdc, 15, 9, TEXT("<"), wcslen(TEXT("<")));
 	TextOut(hdc, 330, 9, TEXT(">"), wcslen(TEXT(">")));
-	TextSelect(hdc, font_index, 141, 130, 112);
+	TextSelect(hdc, font_curplace, 141, 130, 112);
 	FigureOut(hdc, 15, 45, curplace+1);
 
 	PBSelect(hdc, pen_white, brush_white);
@@ -124,17 +124,68 @@ void SelectRelic() {
 	TextSelect(hdc, font_monsterSearch, 220, 220, 220);
 	StringOut(hdc, 630 - monster.length() * 8, 208, monster);
 }
-void TxtFight() {
-	allowInterval = 0;
+void StartWar() {
 	for (int i = 0; i < 4; i++)entity[1][i].Init(i);
 	LoadMonster(monster);
-	timeLine.open("Texts/temp.txt", ofstream::out | ofstream::ate);
-	timeLine << "                                                                                                                                                                                                                                                                                                                                                              ";
-	for (int i = 0; i < MAX_GROUP; i++)if (entity[1][i].存活 != 0) entity[1][i].Prepare("战斗开始");
+	for(int i=0;i<4;i++){
+		if (entity[1][i].存活 != 0) {
+			entity[1][i].面板[回复效果编号] += 1;
+			entity[1][i].面板[吸血效果编号] += 1;
+			entity[1][i].面板[治疗效果编号] += 1;
+		}
+	}
+	for (int i = 0; i < MAX_GROUP; i++) {
+		if (entity[0][i].存活 != 0) {
+			entity[0][i].面板[回复效果编号] += 1;
+			entity[0][i].面板[吸血效果编号] += 1;
+			entity[0][i].面板[治疗效果编号] += 1;
+		}
+	}
+	for (int i = 0; i < 4; i++)if (entity[1][i].存活 != 0) entity[1][i].Prepare("战斗开始");
+	for (int i = 0; i < MAX_GROUP; i++)if (entity[0][i].存活 != 0) {
+		if (entity[0][i].狂暴技能.回复抑制 != 0) {
+			for (int j = 0; j < MAX_GROUP; j++) {
+				if (entity[0][j].存活 != 0) {
+					entity[0][j].面板[回复效果编号] *= (1 - entity[0][i].狂暴技能.回复抑制);
+				}
+			}
+		}
+		if (entity[0][i].狂暴技能.吸血抑制 != 0) {
+			for (int j = 0; j < MAX_GROUP; j++) {
+				if (entity[0][j].存活 != 0) {
+					entity[0][j].面板[吸血效果编号] *= (1 - entity[0][i].狂暴技能.吸血抑制);
+				}
+			}
+		}
+		if (entity[0][i].狂暴技能.治疗抑制 != 0) {
+			for (int j = 0; j < MAX_GROUP; j++) {
+				if (entity[0][j].存活 != 0) {
+					entity[0][j].面板[治疗效果编号] *= (1 - entity[0][i].狂暴技能.治疗抑制);
+				}
+			}
+		}
+	}
 	timeClock = 0;
+}
+void TxtFight() {
+	allowInterval = 0;
+	timeLine.open("Texts/temp.txt", ofstream::out | ofstream::ate);
+	timeLine << endl <<  "战斗开始" << endl; timePrinted = 1; StartWar();
+	timeLine << endl << "当前属性" << endl;
+	for (int i = 0; i < 4; i++)if (entity[1][i].存活 != 0) {
+		timeLine << "    " << entity[1][i].名称 << "：";
+		timeLine << "力" << entity[1][i].力量 << "  ";
+		timeLine << "魔" << entity[1][i].魔力 << "  ";
+		timeLine << "技" << entity[1][i].技巧 << "  ";
+		timeLine << "速" << entity[1][i].速度 << "  ";
+		timeLine << "甲" << entity[1][i].护甲 << "  ";
+		timeLine << "抗" << entity[1][i].抗性 << endl;
+	}
 	while(!End() && timeClock <= 3600) {
 		timePrinted = 0;
 		timeClock += plank;
+		timeClock = float(Int(timeClock * 1000)) / 1000;
+		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].ViolentTime();
 		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].StatusTime();
 		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[1][i].存活 != 0) entity[1][i].StatusTime();
 		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].SkillTime();
@@ -290,7 +341,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam) 
 	case WM_PAINT: {
 		LoadKeyboardLayout(L"0x409", KLF_ACTIVATE | KLF_SETFORPROCESS);
 		Picture(hdcApp, "Pictures/背景/封面.jpg");
-		Sleep(2000);
+		//Sleep(2000);
 		State(0);
 		break;
 	}
@@ -620,6 +671,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam) 
 				state == 40 ? &遗迹.遗迹吸血效果 :
 				state == 41 ? &遗迹.遗迹治疗效果 :
 				state == 42 ? &遗迹.遗迹命中率 : &遗迹.遗迹暴击率;
+			if (KEY_DOWN(189))*p = -*p;
 			if (KEY_DOWN(VK_BACK))*p = *p / 10;
 			for (int i = 48; i < 58; i++) {
 				if (*p <= 9999 && KEY_DOWN(i))*p = *p * 10 + i - 48;

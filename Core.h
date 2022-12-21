@@ -2,14 +2,6 @@
 #define _CORE_H_
 class InputInfo {
 public:
-	/*
-	保存冒险者，装备，魔石，战利品选择
-	每个InputInfo能完整保存一个冒险者的全部信息。一个队伍有4人，会有4个InputInfo
-	一共可以保存5个队伍，因此，main.cpp里面有InputInfo inputs[5][4];
-	int cursuit，当前套装，在1队至5队中选择。当然，在程序中是0至4
-	int curplace，当前位置，在1号位至4号位中选择，在程序中是0至3
-	inputs[cursuit][curplace]，就是用户正在输入的冒险者了。
-	*/
 	string 职业;
 	string 武器;
 	string 铠甲;
@@ -28,7 +20,6 @@ public:
 	void Clear();
 };
 struct RelicInfo {
-	//遗迹战斗信息
 	bool 遗迹战斗;
 	int 遗迹状态效果;
 	int 遗迹生命;
@@ -45,7 +36,7 @@ struct RelicInfo {
 struct EquipEffect {
 	string 类型;       //状态, 增幅, 连击, 真伤，回复
 	string 名称;       
-	string 触发;       //战斗开始, 发动物攻, 发动魔攻, 受到物攻, 受到魔攻, 
+	string 触发;       //战斗开始, 发动物理攻击, 发动魔法攻击, 受到物理攻击, 受到魔法攻击, 
 	float 概率;        //0.3
 	string 对象;       //对敌方全体，对敌方单体，对自身，对我方全体，对我方单体
 	int 常数;
@@ -56,7 +47,6 @@ struct EquipEffect {
 };
 
 class Status; class Equip; class Ring; class MagicStone; class Skill; class ViolentSkill; class Entity;
-
 class Status {
 public:
 	string 名称;
@@ -74,7 +64,6 @@ public:
 	int Value();
 };
 class Equip {
-	//部分信息wiki没有，但不影响计算器
 public:
 	string 名称;
 	vector<string> 简称;             //简称。即首字母大写，或者其他的。用户可以在文件中自定义。
@@ -87,9 +76,8 @@ public:
 	bool Effect(Entity* owner, string condition);
 };
 class Ring {
-	//环
 public:
-	int 类型;    //见definition.h
+	int 类型;
 	int 特效数值;
 	void Init(int type, int level);
 	float Value(int level);
@@ -98,7 +86,7 @@ public:
 };
 class MagicStone {
 public:
-	int 类型;    //见definition.h
+	int 类型;
 	int 力;
 	int 魔;
 	int 技;
@@ -117,7 +105,7 @@ public:
 	int 等级;
 
 	string 对象;
-	int 常数; float 系数[8];//力魔技速体甲抗 武威 当前生命值 已损生命值
+	int 常数; float 系数[8];//力魔技速体甲抗 武威
 	string 伤害类型;
 
 	float 概率;
@@ -147,11 +135,12 @@ class ViolentSkill {
 public:
 	string 名称;
 	bool 重伤失效;
+	float 回复抑制, 吸血抑制, 治疗抑制;
 	string 类型;
 	float 首次施放时间;
 	float 冷却等待时间;
+	string 死亡关联;
 	Skill 内容;
-	void Release(Entity* owner);
 	void Clear();
 };
 class Entity {
@@ -188,6 +177,7 @@ public:
 	bool HasStatus(string statusName);
 	void StatusTime();
 	void SkillTime();
+	void ViolentTime();
 	void Attached(Status status);
 	void Attached(float p, Status status);
 	void Attach(string group, Status status);
@@ -195,6 +185,7 @@ public:
 	void Prepare(string condition);
 	void Dead();
 	void Healed(int heal);
+	void Attacked();
 	void Attacked(int value);
 	int  Attacked(int harm, string type, int oppoplace, float oppoignore, float oppohitrate, int opposkill);
 	int  Attacked(int harm, string type, int oppoplace, float oppoignore, float oppohitrate, int opposkill, float p, Status status);

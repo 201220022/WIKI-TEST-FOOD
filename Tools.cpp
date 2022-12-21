@@ -187,9 +187,9 @@ bool Rand(float p) {
 	return (p >= g);
 }
 string Time(float t) {
-	int f = Int(t * 10) % 10;
-	int s = Int(t) % 60;
-	int m = Int(t) / 60;
+	int f = int(t * 10 + 0.001) % 10;
+	int s = int(t + 0.001) % 60;
+	int m = int(t + 0.001) / 60;
 	string ret = "";
 	if (m < 10)ret += "0";
 	ret += FloatTran(m);

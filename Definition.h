@@ -249,5 +249,5 @@ using namespace std;
 #define Font(name,size,broad,type) HFONT name = CreateFont(size, 0, 0, 0, broad, 0, 0, 0, 0, 0, 0, 0, 0, type);
 #define TextSelect(hdc, hfont, r, g, b) extern HFONT hfont;	SelectObject(hdc, hfont); SetBkMode(hdc, TRANSPARENT); SetTextColor(hdc, RGB(r,g,b));
 #define PBSelect(hdc, hpen, hbrush) extern HPEN hpen; extern HBRUSH hbrush;SelectObject(hdc, hpen); SelectObject(hdc, hbrush); 
-#define For(b,c) for (auto c = b.begin(); c != b.end(); c++) 
+#define For(a,b) for (auto b = a.begin(); b != a.end(); b++) 
 #endif

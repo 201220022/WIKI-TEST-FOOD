@@ -1,19 +1,14 @@
 ﻿#include "Definition.h"
 #include "Core.h"
 using namespace std;
-Font(font_recast, 13, 310, TEXT("黑体"));
-Font(font_index, 26, 600, TEXT("微软雅黑"));
+Font(font_curplace, 26, 600, TEXT("微软雅黑"));
 Font(font_job, 26, 600, TEXT("楷体"));
+Font(font_equip, 23, 570, TEXT("微软雅黑"));
+Font(font_ring, 33, 550, TEXT("微软雅黑"));
+Font(font_msin, 30, 550, TEXT("微软雅黑"));
 Font(font_zlp, 25, 560, TEXT("楷体"));
 Font(font_zlp2, 30, 560, TEXT("微软雅黑"));
-Font(font_msin, 30, 550, TEXT("微软雅黑"));
-Font(font_bloodtext, 18, 560, TEXT("微软雅黑"));
-Font(font_harmtext, 25, 560, TEXT("微软雅黑"));
-//Font(font_ba, 26, 555, TEXT("微软雅黑"));
-Font(font_skilltext, 16, 560, TEXT("微软雅黑"));
 Font(font_attribute, 23, 550, TEXT("微软雅黑"));
-Font(font_ring, 33, 550, TEXT("微软雅黑"));
-Font(font_equip, 23, 570, TEXT("微软雅黑"));
 Font(font_outSkillSet, 10, 550, TEXT("黑体"));
 Font(font_relic, 25, 550, TEXT("微软雅黑"));
 Font(font_relicpoint, 30, 600, TEXT("微软雅黑"));
@@ -21,12 +16,5 @@ Font(font_monsterSearch, 32, 600, TEXT("楷体"));
 Font(font_monsterSearchPoint, 32, 600, TEXT("微软雅黑"));
 Pen(pen_brown, 141, 130, 112); Brush(brush_brown, 141, 130, 112);
 Pen(pen_coffee, 33, 30, 25); Brush(brush_coffee, 33, 30, 25);
-Pen(pen_blue, 28, 35, 63); Brush(brush_blue, 28, 35, 63);
-Pen(pen_black, 0, 0, 0); Brush(brush_black, 0, 0, 0);
 Pen(pen_white, 200, 200, 200); Brush(brush_white, 200, 200, 200);
-Pen(pen_blood, 124, 3, 0); Brush(brush_blood, 124, 3, 0);
-Pen(pen_cdAdd, 2, 109, 115); Brush(brush_cdAdd, 2, 109, 115);
-Pen(pen_bkg, 43, 31, 31); Brush(brush_bkg, 43, 31, 31);
-Pen(pen_blk, 20, 20, 20); Brush(brush_blk, 20, 20, 20);
 Pen(pen_recast, 16, 20, 16); Brush(brush_recast, 16, 20, 16);
-Pen(pen_red, 255, 0, 0); Brush(brush_red, 255, 0, 0);

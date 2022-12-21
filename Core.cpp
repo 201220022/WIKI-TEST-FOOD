@@ -38,7 +38,6 @@ Status::Status(Skill* skill, Entity* src) {
 	for (int i = 0; i < 8; i++)value += Int(skill->状态系数[i] * src->Attribute(i)); 
 	value += Int(skill->状态系数[8] * src->当前生命值);
 	value += Int(skill->状态系数[9] * (src->体质 * 10 - src->当前生命值));
-	if (skill->状态类型 == dot)value = Int(value * src->持续); 
 	名称 = skill->状态名称;
 	特效名称 = skill->名称;
 	类型 = skill->状态类型;
@@ -47,6 +46,39 @@ Status::Status(Skill* skill, Entity* src) {
 	当前层数 = 0;
 	最大层数 = skill->最大层数;
 	附加者 = src;
+	if (timeLine.is_open()) {
+		if (timePrinted == 0) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
+		timeLine << "            技能附带状态：名称:" << skill->状态名称 << "  类型:";
+		string s =
+			(int(skill->状态类型) == 0) ? "力量buff" :
+			(int(skill->状态类型) == 1) ? "魔力buff" :
+			(int(skill->状态类型) == 2) ? "技巧buff" :
+			(int(skill->状态类型) == 3) ? "速度buff" :
+			(int(skill->状态类型) == 4) ? "体质buff" :
+			(int(skill->状态类型) == 5) ? "护甲buff" :
+			(int(skill->状态类型) == 6) ? "抗性buff" :
+			(int(skill->状态类型) == 7) ? "武威buff" :
+			(int(skill->状态类型) == 8) ? "hot" :
+			(int(skill->状态类型) == 9) ? "dot" :
+			(int(skill->状态类型) == 10) ? "反伤" :
+			(int(skill->状态类型) == 11) ? "眩晕" :
+			(int(skill->状态类型) == 12) ? "物理承伤" :
+			(int(skill->状态类型) == 13) ? "魔法承伤" : "类型错误";
+		if (剩余时间 >= 0)timeLine << s << "  时间:" << 剩余时间 << "秒" << endl;
+		else timeLine << s << "  时间:永久" << endl;
+		timeLine << "            " << "状态参数列表[ ";
+		if (!Equal(skill->状态系数[0], 0))timeLine << "力量" << src->力量 << "×" << skill->状态系数[0] * 100 << "% ";
+		if (!Equal(skill->状态系数[1], 0))timeLine << "魔力" << src->魔力 << "×" << skill->状态系数[1] * 100 << "% ";
+		if (!Equal(skill->状态系数[2], 0))timeLine << "技巧" << src->技巧 << "×" << skill->状态系数[2] * 100 << "% ";
+		if (!Equal(skill->状态系数[3], 0))timeLine << "速度" << src->速度 << "×" << skill->状态系数[3] * 100 << "% ";
+		if (!Equal(skill->状态系数[4], 0))timeLine << "体质" << src->体质 << "×" << skill->状态系数[4] * 100 << "% ";
+		if (!Equal(skill->状态系数[5], 0))timeLine << "护甲" << src->护甲 << "×" << skill->状态系数[5] * 100 << "% ";
+		if (!Equal(skill->状态系数[6], 0))timeLine << "抗性" << src->抗性 << "×" << skill->状态系数[6] * 100 << "% ";
+		if (!Equal(skill->状态系数[7], 0))timeLine << "武威" << src->武威 << "×" << skill->状态系数[7] * 100 << "% ";
+		if (!Equal(skill->状态系数[8], 0))timeLine << "当前生命" << src->当前生命值 << "×" << skill->状态系数[8] * 100 << "% ";
+		if (!Equal(skill->状态系数[9], 0))timeLine << "已损生命" << (src->体质 * 10 - src->当前生命值) << "×" << skill->状态系数[9] * 100 << "% ";
+		timeLine << "] = " << value << endl;
+	}
 }
 Status::Status(EquipEffect content, Entity* src) {
 	int value = content.常数;
@@ -61,6 +93,39 @@ Status::Status(EquipEffect content, Entity* src) {
 	当前层数 = 0;
 	最大层数 = content.最大层数;
 	附加者 = src;
+	if (timeLine.is_open()) {
+		if (timePrinted == 0) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
+		timeLine << "            装备附带状态：名称:" << content.状态名称 << "  类型:";
+		string s =
+			(int(content.状态类型) == 0) ? "力量buff" :
+			(int(content.状态类型) == 1) ? "魔力buff" :
+			(int(content.状态类型) == 2) ? "技巧buff" :
+			(int(content.状态类型) == 3) ? "速度buff" :
+			(int(content.状态类型) == 4) ? "体质buff" :
+			(int(content.状态类型) == 5) ? "护甲buff" :
+			(int(content.状态类型) == 6) ? "抗性buff" :
+			(int(content.状态类型) == 7) ? "武威buff" :
+			(int(content.状态类型) == 8) ? "hot" :
+			(int(content.状态类型) == 9) ? "dot" :
+			(int(content.状态类型) == 10) ? "反伤" :
+			(int(content.状态类型) == 11) ? "眩晕" :
+			(int(content.状态类型) == 12) ? "物理承伤" :
+			(int(content.状态类型) == 13) ? "魔法承伤" : "类型错误";
+		if (剩余时间 >= 0)timeLine << s << "  时间:" << 剩余时间 << "秒" << endl;
+		else timeLine << s << "  时间:永久" << endl;
+		timeLine << "            " << "状态参数列表[ ";
+		if (!Equal(content.系数[0], 0))timeLine << "力量" << src->力量 << "×" << content.系数[0] * 100 << "% ";
+		if (!Equal(content.系数[1], 0))timeLine << "魔力" << src->魔力 << "×" << content.系数[1] * 100 << "% ";
+		if (!Equal(content.系数[2], 0))timeLine << "技巧" << src->技巧 << "×" << content.系数[2] * 100 << "% ";
+		if (!Equal(content.系数[3], 0))timeLine << "速度" << src->速度 << "×" << content.系数[3] * 100 << "% ";
+		if (!Equal(content.系数[4], 0))timeLine << "体质" << src->体质 << "×" << content.系数[4] * 100 << "% ";
+		if (!Equal(content.系数[5], 0))timeLine << "护甲" << src->护甲 << "×" << content.系数[5] * 100 << "% ";
+		if (!Equal(content.系数[6], 0))timeLine << "抗性" << src->抗性 << "×" << content.系数[6] * 100 << "% ";
+		if (!Equal(content.系数[7], 0))timeLine << "武威" << src->武威 << "×" << content.系数[7] * 100 << "% ";
+		if (!Equal(content.系数[8], 0))timeLine << "当前生命" << src->当前生命值 << "×" << content.系数[8] * 100 << "% ";
+		if (!Equal(content.系数[9], 0))timeLine << "已损生命" << (src->体质 * 10 - src->当前生命值) << "×" << content.系数[9] * 100 << "% ";
+		timeLine << "] = " << value << endl;
+	}
 }
 void Status::Set(EquipEffect content, Entity* src) {
 	int value = content.常数;
@@ -75,9 +140,41 @@ void Status::Set(EquipEffect content, Entity* src) {
 	当前层数 = 0;
 	最大层数 = content.最大层数;
 	附加者 = src;
+	if (timeLine.is_open()) {
+		if (timePrinted == 0) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
+		timeLine << "            装备附带状态：名称:" << content.状态名称 << "  类型:";
+		string s = 
+			(int(content.状态类型) == 0) ? "力量buff" :
+			(int(content.状态类型) == 1) ? "魔力buff" :
+			(int(content.状态类型) == 2) ? "技巧buff" :
+			(int(content.状态类型) == 3) ? "速度buff" :
+			(int(content.状态类型) == 4) ? "体质buff" :
+			(int(content.状态类型) == 5) ? "护甲buff" :
+			(int(content.状态类型) == 6) ? "抗性buff" :
+			(int(content.状态类型) == 7) ? "武威buff" :
+			(int(content.状态类型) == 8) ? "hot" :
+			(int(content.状态类型) == 9) ? "dot" :
+			(int(content.状态类型) == 10) ? "反伤" :
+			(int(content.状态类型) == 11) ? "眩晕" :
+			(int(content.状态类型) == 12) ? "物理承伤" :
+			(int(content.状态类型) == 13) ? "魔法承伤" : "类型错误";
+		if (剩余时间 >= 0)timeLine << s << "  时间:" << 剩余时间 << "秒" << endl;
+		else timeLine << s << "  时间:永久" << endl;
+		timeLine << "            " << "状态参数列表[ ";
+		if (!Equal(content.系数[0], 0))timeLine << "力量" << src->力量 << "×" << content.系数[0] * 100 << "% ";
+		if (!Equal(content.系数[1], 0))timeLine << "魔力" << src->魔力 << "×" << content.系数[1] * 100 << "% ";
+		if (!Equal(content.系数[2], 0))timeLine << "技巧" << src->技巧 << "×" << content.系数[2] * 100 << "% ";
+		if (!Equal(content.系数[3], 0))timeLine << "速度" << src->速度 << "×" << content.系数[3] * 100 << "% ";
+		if (!Equal(content.系数[4], 0))timeLine << "体质" << src->体质 << "×" << content.系数[4] * 100 << "% ";
+		if (!Equal(content.系数[5], 0))timeLine << "护甲" << src->护甲 << "×" << content.系数[5] * 100 << "% ";
+		if (!Equal(content.系数[6], 0))timeLine << "抗性" << src->抗性 << "×" << content.系数[6] * 100 << "% ";
+		if (!Equal(content.系数[7], 0))timeLine << "武威" << src->武威 << "×" << content.系数[7] * 100 << "% ";
+		if (!Equal(content.系数[8], 0))timeLine << "当前生命" << src->当前生命值 << "×" << content.系数[8] * 100 << "% ";
+		if (!Equal(content.系数[9], 0))timeLine << "已损生命" << (src->体质 * 10 - src->当前生命值) << "×" << content.系数[9] * 100 << "% ";
+		timeLine << "] = " << value << endl;
+	}
 }
 int Status::Value() {
-	//给出状态数值
 	bool 允许状态效果 =
 		附加者 == NULL ? 0 :
 		附加者->阵营 == 1 ? 1 : 0;
@@ -119,7 +216,7 @@ bool Equip::Load(string src) {
 					tempEffect.类型 = data["特效"][j].HasMember("类型") ? data["特效"][j]["类型"].GetString() : "";
 					tempEffect.名称 = data["特效"][j].HasMember("名称") ? data["特效"][j]["名称"].GetString() : "";
 					tempEffect.触发 = data["特效"][j].HasMember("触发") ? data["特效"][j]["触发"].GetString() : "";
-					tempEffect.概率 = data["特效"][j].HasMember("概率") ? data["特效"][j]["概率"].GetFloat() : 0;
+					tempEffect.概率 = data["特效"][j].HasMember("概率") ? data["特效"][j]["概率"].GetFloat() : 1;
 					tempEffect.对象 = data["特效"][j].HasMember("对象") ? data["特效"][j]["对象"].GetString() : "对自身";
 					tempEffect.常数 = data["特效"][j].HasMember("常数") ? data["特效"][j]["常数"].GetInt() : 0;
 					tempEffect.系数[0] = data["特效"][j].HasMember("力量系数") ? data["特效"][j]["力量系数"].GetFloat() : 0;
@@ -187,15 +284,29 @@ bool Equip::Load(string src) {
 	return 0;
 }
 bool Equip::Effect(Entity* owner, string condition) {
-	//触发装备特效。若触发，返回1.
-	bool ret = 0;
-	for (vector<EquipEffect>::iterator i = 装备特效.begin(); i != 装备特效.end(); i++) {
+	if (condition == "战斗开始" && !Equal(属性[9], 0)) {
+		for (int i = 0; i < MAX_GROUP; i++) {
+			if (entity[1 - owner->阵营][i].存活 != 0) {
+				entity[1 - owner->阵营][i].面板治疗效果 *= (1 - 属性[9]);
+			}
+		}
+	}
+	For(装备特效, i) {
 		if ((*i).触发 == condition && Rand((*i).概率)) {
-			if(timeLine.is_open())timeLine << "        " << owner->名称 << "的" << 名称 << "触发特效" << (*i).名称 << endl;
-			ret = 1;
+			if (timeLine.is_open())timeLine << "        " << 名称 << "触发特效" << (*i).名称 << endl;
 			if ((*i).类型 == "状态") {
-				mem.Set((*i), owner);
-				memGroup = (*i).对象;
+				if (condition == "发动物理攻击" || condition == "发动魔法攻击") {
+					mem.Set((*i), owner);
+					memGroup = (*i).对象;
+				}
+				else {
+					if ((*i).对象 == "对自身" || (*i).对象 == "对我方全体" || (*i).对象 == "对我方单体" && owner->我方目标 == owner->站位) {
+						Status status0((*i).名称);
+						owner->Attached(status0);
+					}
+					Status status((*i), owner);
+					owner->Attach((*i).对象, status);
+				}
 			}
 			else if ((*i).类型 == "增幅") {
 				For((*i).增幅系数, j) {
@@ -244,9 +355,10 @@ bool Equip::Effect(Entity* owner, string condition) {
 					}
 				}
 			}
+			return 1;
 		}
 	}
-	return ret;
+	return 0;
 }
 
 void Ring::Init(int type, int level) {
@@ -516,7 +628,6 @@ void Entity::Clear(int place) {
 	伤害来源占比.clear();
 }
 void Entity::Init(int place){
-	//跟据inputs[cursuit][place]中的信息，初始化entity[1][place]
 	if (inputs[cursuit][place].职业 == "未选择") {
 		名称 = "未选择";
 		存活 = 0;
@@ -682,13 +793,13 @@ float Entity::RingEffect(int i) {
 	if (环.类型 == 孤儿伤害空环 && i == 魔伤编号) return (4 - 我方人数) * 环.Value(环.特效数值);
 	if (环.类型 == 孤儿命中空环 && i == 命中率编号) return (4 - 我方人数) * 环.Value(环.特效数值);
 	if (环.类型 == 孤儿持续空环 && i == 持续编号) return (4 - 我方人数) * 环.Value(环.特效数值);
-	if (环.类型 == 无限制治疗水环 && i == 治疗效果编号) return 环.Value(环.特效数值);
+	if (环.类型 == 无限制治疗水环 && i == 回复效果编号) return 环.Value(环.特效数值);
 	if (环.类型 == 无限制异常水环 && i == 异常附加率编号) return 环.Value(环.特效数值);
 	if (环.类型 == 无限制闪避水环 && i == 闪避率编号) return 环.Value(环.特效数值);
-	if (环.类型 == 多人治疗水环 && 敌方人数 >= 2 && i == 治疗效果编号) return 环.Value(环.特效数值);
+	if (环.类型 == 多人治疗水环 && 敌方人数 >= 2 && i == 回复效果编号) return 环.Value(环.特效数值);
 	if (环.类型 == 多人异常水环 && 敌方人数 >= 2 && i == 异常附加率编号) return 环.Value(环.特效数值);
 	if (环.类型 == 多人闪避水环 && 敌方人数 >= 2 && i == 闪避率编号) return 环.Value(环.特效数值);
-	if (环.类型 == 孤儿治疗水环 && i == 治疗效果编号) return (4 - 我方人数) * 环.Value(环.特效数值);
+	if (环.类型 == 孤儿治疗水环 && i == 回复效果编号) return (4 - 我方人数) * 环.Value(环.特效数值);
 	if (环.类型 == 孤儿异常水环 && i == 异常附加率编号) return (4 - 我方人数) * 环.Value(环.特效数值);
 	if (环.类型 == 孤儿闪避水环 && i == 闪避率编号) return (4 - 我方人数) * 环.Value(环.特效数值);
 	if (环.类型 == 承伤伤害火环 && i == 物伤编号) return 环.Value(环.特效数值);
@@ -722,84 +833,67 @@ float Entity::RingEffect(int i) {
 	return 0;
 }
 float Entity::Attribute(int i) {
-	//跟据面板和增幅，返回属性
 	float cur = 0;
 	if (i < 7) {
 		cur = 面板[i] + 增幅[i];
-		for (vector<Status>::iterator it = 状态.begin(); it != 状态.end(); it++) {
+		For(状态, it) {
 			if ((*it).类型 == i) {
-				cur = Int(cur + (*it).Value());
+				cur = cur + Int((*it).Value());
 			}
 		}
-		if (i == 4)cur = Int(cur * (1.0 + 阵营 * float(遗迹.遗迹生命) / 100));
-		if (i == 5)cur = Int(cur + 阵营 * float(遗迹.遗迹护甲) / 100);
-		if (i == 6)cur = Int(cur + 阵营 * float(遗迹.遗迹抗性) / 100);
+		if (i == 4)cur = cur * (1.0 + float(遗迹.遗迹生命) * 阵营 * 遗迹.遗迹战斗 / 100);
+		if (i == 5)cur = cur + 遗迹.遗迹护甲 * 阵营 * 遗迹.遗迹战斗;
+		if (i == 6)cur = cur + 遗迹.遗迹抗性 * 阵营 * 遗迹.遗迹战斗;
+		cur = Int(cur);
 	}
-	if (i == 7)cur = 面板[i];
-	if (i == 8)cur = (1.0 + 面板[i] + 增幅[i]) * (1.0 + 阵营 * float(遗迹.遗迹物伤) / 100);
-	if (i == 9)cur = (1.0 + 面板[i] + 增幅[i]) * (1.0 + 阵营 * float(遗迹.遗迹魔伤) / 100);
-	if (i == 10)cur = (1.0 + 面板[i] + 增幅[i]);
-	if (i == 11)cur = 面板[i] + 增幅[i];
-	if (i == 12)cur = 面板[i] + 增幅[i];
-	if (i == 13)cur = 面板[i] + 增幅[i];
-	if (i == 14)cur = 面板[i] + 增幅[i];
-	if (i == 15)cur = 面板[i] + 增幅[i] + 阵营 * float(遗迹.遗迹命中率) / 100;
-	if (i == 16)cur = 面板[i] + 增幅[i];
-	if (i == 17)cur = 面板[i] + 增幅[i] + 阵营 * float(遗迹.遗迹暴击率) / 100;
-	if (i == 18)cur = 面板[i] + 增幅[i];
-	if (i == 19)cur = 面板[i];
-	if (i == 20)cur = 面板[i];
-	if (i == 21)cur = 面板[i];
-	if (i == 22)cur = 增幅[i];
-	if (i == 23)cur = 增幅[i];
-	if (i == 24)cur = 1.0 + 面板[i] + 增幅[i] + 阵营 * float(遗迹.遗迹回复效果) / 100;
-	if (i == 25)cur = 1.0 + 面板[i] + 增幅[i] + 阵营 * float(遗迹.遗迹吸血效果) / 100;
-	if (i == 26)cur = 1.0 + 面板[i] + 增幅[i] + 阵营 * float(遗迹.遗迹治疗效果) / 100;
-	if (i == 27)cur = 1.0 + 面板[i];
-	return max(cur + RingEffect(i), float(0));
+	if (i == 武威编号)cur = Int(面板[i]);
+	if (i == 物伤编号)cur = (1.0 + 面板[i] + RingEffect(i)) * (1.0 + float(遗迹.遗迹物伤) * 阵营 * 遗迹.遗迹战斗 / 100);
+	if (i == 魔伤编号)cur = (1.0 + 面板[i] + RingEffect(i)) * (1.0 + float(遗迹.遗迹魔伤) * 阵营 * 遗迹.遗迹战斗 / 100);
+	if (i == 持续编号)cur = (1.0 + 面板[i] + RingEffect(i));
+	if (i == 物理单吸编号)cur = 面板[i];
+	if (i == 物理群吸编号)cur = 面板[i];
+	if (i == 魔法单吸编号)cur = 面板[i];
+	if (i == 魔法群吸编号)cur = 面板[i];
+	if (i == 命中率编号)cur = 面板[i] + RingEffect(i) + float(遗迹.遗迹命中率) * 阵营 * 遗迹.遗迹战斗 / 100;
+	if (i == 闪避率编号)cur = 面板[i] + RingEffect(i);
+	if (i == 暴击率编号)cur = 面板[i]+ float(遗迹.遗迹暴击率) * 阵营 * 遗迹.遗迹战斗 / 100;
+	if (i == 异常附加率编号)cur = 面板[i] + RingEffect(i);
+	if (i == 卸负编号)cur = 面板[i];
+	if (i == 无视护甲编号)cur = 面板[i];
+	if (i == 无视抗性编号)cur = 面板[i];
+	if (i == 物伤格挡编号)cur = RingEffect(i);
+	if (i == 魔伤格挡编号)cur = RingEffect(i);
+	if (i == 回复效果编号)cur = 面板[i] + RingEffect(i) + float(遗迹.遗迹回复效果) * 阵营 * 遗迹.遗迹战斗 / 100;
+	if (i == 吸血效果编号)cur = 面板[i] + float(遗迹.遗迹吸血效果) * 阵营 * 遗迹.遗迹战斗 / 100;
+	if (i == 治疗效果编号)cur = 面板[i] + float(遗迹.遗迹治疗效果) * 阵营 * 遗迹.遗迹战斗 / 100;
+	return max(cur, float(0));
 }
 void Entity::Attached(Status status) {
 	if (status.类型 == -1) {
-		for (vector<Status>::iterator it = 状态.begin(); it != 状态.end(); it++) {
-			if ((*it).名称 == status.名称) {
-				if (状态.size() == 1)状态.clear(); 
-				else { 状态.erase(it); it = 状态.begin();}
-				return;
-			}
+		for (auto it = 状态.begin(); it != 状态.end();) {
+			if ((*it).名称 == status.名称) { 状态.erase(it); it = 状态.begin(); }
+			else it++;
 		}
 		return;
 	}
-	for (vector<string>::iterator it = 免疫.begin(); it != 免疫.end(); it++) {
-		if ((*it) == status.名称) {
-			return;
-		}
-	}
+	For (免疫, it) if ((*it) == status.名称) return;
 	int curlayer = 0;
-	for (vector<Status>::iterator it = 状态.begin(); it != 状态.end(); it++) {
+	for (auto it = 状态.begin(); it != 状态.end();) {
 		if ((*it).名称 == status.名称) {
-			if ((*it).特效名称 == status.特效名称) {
-				curlayer = (*it).当前层数;
-			}
-			if (状态.size() == 1) { 状态.clear(); }
-			else { 状态.erase(it); it = 状态.begin(); }
-			break;
+			if ((*it).特效名称 == status.特效名称) curlayer = (*it).当前层数;
+			状态.erase(it); it = 状态.begin();
 		}
+		else it++;
 	}
 	status.当前层数 = min(curlayer + 1, status.最大层数);
 	状态.push_back(status);
+	if (timeLine.is_open()) {
+		timeLine << "            " << 名称 << "被挂状态" << status.名称;
+		if (status.类型 <= 6) timeLine << "，当前" << Attribute(status.类型) << endl;
+	}
 }
 void Entity::Attached(float p, Status status) {
 	if (Rand(p - 抗性 / 1000.0)) {
-		if (status.类型 == -1) {
-			for (vector<Status>::iterator it = 状态.begin(); it != 状态.end(); it++) {
-				if ((*it).名称 == status.名称) {
-					if (状态.size() == 1)状态.clear();
-					else { 状态.erase(it); it = 状态.begin(); }
-					return;
-				}
-			}
-			return;
-		}
 		for (vector<string>::iterator it = 免疫.begin(); it != 免疫.end(); it++) {
 			if ((*it) == status.名称) {
 				return;
@@ -816,51 +910,46 @@ void Entity::Attached(float p, Status status) {
 				break;
 			}
 		}
-		status.当前层数 = max(curlayer + 1, status.最大层数);
+		status.当前层数 = min(curlayer + 1, status.最大层数);
 		状态.push_back(status);
+		if (timeLine.is_open()) {
+			timeLine << "            " << 名称 << "被挂状态" << status.名称;
+			if (status.类型 <= 6) timeLine << "，当前" << Attribute(status.类型) << endl;
+		}
 	}
 }
 void Entity::Attach(string 对象, Status status) {
 	if (对象 == "对敌方单体") {
 		entity[1 - 阵营][敌方目标].Attached(status);
 	}
-	if (对象 == "对敌方全体") {
+	else if (对象 == "对敌方全体") {
 		for (int i = 0; i < 7; i++) {
 			if (entity[1 - 阵营][i].存活 != 0)entity[1 - 阵营][i].Attached(status);
 		}
 	}
-	if (对象 == "对自身") {
+	else if (对象 == "对自身") {
 		Attached(status);
 	}
-	if (对象 == "对我方单体") {
+	else if (对象 == "对我方单体") {
 		entity[阵营][我方目标].Attached(status);
 	}
-	if (对象 == "对我方全体") {
+	else if (对象 == "对我方全体") {
 		for (int i = 0; i < 7; i++) {
 			if (entity[阵营][i].存活 != 0)entity[阵营][i].Attached(status);
 		}
 	}
+	else cout << "Attach Target Error!" << endl;
 }
 void Entity::Attach(float p, string 对象, Status status) {
 	if (对象 == "对敌方单体") {
 		entity[1 - 阵营][敌方目标].Attached(p, status);
 	}
-	if (对象 == "对敌方全体") {
+	else if (对象 == "对敌方全体") {
 		for (int i = 0; i < 7; i++) {
 			if (entity[1 - 阵营][i].存活 != 0)entity[1 - 阵营][i].Attached(p, status);
 		}
 	}
-	if (对象 == "对自身") {
-		Attached(p, status);
-	}
-	if (对象 == "对我方单体") {
-		entity[阵营][我方目标].Attached(p, status);
-	}
-	if (对象 == "对我方全体") {
-		for (int i = 0; i < 7; i++) {
-			if (entity[阵营][i].存活 != 0)entity[阵营][i].Attached(p, status);
-		}
-	}
+	else cout << "Attach Target Error!" << endl;
 }
 void Entity::Prepare(string condition) {
 	if (condition == "战斗开始") {
@@ -882,12 +971,35 @@ void Entity::Dead() {
 	if (timeLine.is_open())timeLine << "    " << 名称 << "阵亡" << endl;
 	存活 = 0;
 	//redraw = 1;
-	for (int i = 0; i < MAX_GROUP; i++) {
-		if (entity[1 - 阵营][i].存活 == 1) {
-			entity[1 - 阵营][i].面板治疗效果 /= (1 - 武器.属性[9]);
-			entity[1 - 阵营][i].面板治疗效果 /= (1 - 铠甲.属性[9]);
-			entity[1 - 阵营][i].面板治疗效果 /= (1 - 饰品1.属性[9]);
-			entity[1 - 阵营][i].面板治疗效果 /= (1 - 饰品2.属性[9]);
+	if (阵营 == 1) {
+		for (int i = 0; i < MAX_GROUP; i++) {
+			if (entity[0][i].存活 != 0) {
+				entity[0][i].面板治疗效果 /= (1.0 - 武器.属性[9]);
+				entity[0][i].面板治疗效果 /= (1.0 - 铠甲.属性[9]);
+				entity[0][i].面板治疗效果 /= (1.0 - 饰品1.属性[9]);
+				entity[0][i].面板治疗效果 /= (1.0 - 饰品2.属性[9]);
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < MAX_GROUP; i++) {
+			if (entity[1][i].存活 != 0) {
+				entity[1][i].面板回复效果 /= (1.0 - 狂暴技能.回复抑制);
+				entity[1][i].面板吸血效果 /= (1.0 - 狂暴技能.吸血抑制);
+				entity[1][i].面板治疗效果 /= (1.0 - 狂暴技能.治疗抑制);
+			}
+		}
+		if (狂暴技能.死亡关联 == "击杀boss则小怪也被击杀" && 站位 == 0) {
+			if (timeLine.is_open())timeLine << "    死亡关联触发" << endl;
+			for (int i = 1; i < MAX_GROUP; i++)if (entity[0][i].存活 != 0)entity[0][i].Attacked();
+		}
+		if (狂暴技能.死亡关联 == "击杀小怪则boss也被击杀" && 站位 != 0) {
+			bool hasLife = 0;
+			for (int i = 1; i < MAX_GROUP; i++)if (entity[0][i].存活 != 0)hasLife = 1;
+			if (hasLife == 0 && entity[0][0].存活 != 0) {
+				if (timeLine.is_open())timeLine << "    死亡关联触发" << endl;
+				entity[0][0].Attacked();
+			}
 		}
 	}
 	if (遗迹.遗迹战斗) {
@@ -902,6 +1014,8 @@ void Entity::Healed(int heal) {
 		heal = Int(heal * 治疗效果);
 		heal = max(1, heal);
 		//HarmAdd(heal, 4);
+		if (timePrinted == 0 && min(heal, Int(体质) * 10 - 当前生命值) >= 1 && timeLine.is_open()) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
+		if (timeLine.is_open() && min(heal, Int(体质) * 10 - 当前生命值) >= 1) { timeLine << "        " << 名称 << "受到回复" << min(heal, Int(体质) * 10 - 当前生命值) << "，当前生命" << min(Int(当前生命值 + heal), Int(体质) * 10) << endl; }
 		当前生命值 = min(Int(当前生命值 + heal), Int(体质) * 10);
 		if (当前生命值 == Int(体质) * 10) {
 			伤害类型占比.clear();
@@ -909,12 +1023,24 @@ void Entity::Healed(int heal) {
 		}
 	}
 }
+void Entity::Attacked() {
+	伤害类型占比.clear();
+	伤害来源占比.clear();
+	pair<string, int> p("毁灭一击", 当前生命值);
+	伤害类型占比.push_back(p);
+	伤害来源占比.push_back(p);
+	当前生命值 = 0;
+	最低血线 = 0;
+	Dead();
+}
 void Entity::Attacked(int harm) {
 	harm = max(harm, 1);
 	pair<string, int> p("真伤与dot", harm);
 	伤害类型占比.push_back(p);
 	伤害来源占比.push_back(p);
 	//HarmAdd(damage, 3);
+	if (timePrinted == 0 && min(harm, 当前生命值) >= 1 && timeLine.is_open()) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
+	if (timeLine.is_open() && min(harm, 当前生命值) >= 1) { timeLine << "        " << 名称 << "受到真伤" << min(harm, 当前生命值) << "，当前生命" << 当前生命值 - min(harm, 当前生命值) << endl; }
 	当前生命值 -= min(harm, 当前生命值);
 	最低血线 = min(最低血线, 当前生命值);
 	if (当前生命值 == 0)Dead();
@@ -924,7 +1050,11 @@ int  Entity::Attacked(int harm, string type, int oppoplace, float oppoignore, fl
 	敌方目标 = oppoplace;
 	if (Rand(oppohitrate + opposkill / (速度 * 0.3) - 闪避率)) {
 		if (type == "物理") {
-			Prepare("在受到物理攻击的瞬间");
+			Prepare("受到物理攻击");
+			if (timeLine.is_open()) {
+				timeLine << "        " << 名称 << "受到物伤" << harm;
+				timeLine << "，护甲" << 护甲 << "，最终承伤";
+			}
 			damage = Int(harm * 50.0 / (50 + max(int(护甲 - Int(oppoignore)), 0)));
 			For(状态, it) if ((*it).类型 == 物理承伤)damage = Int(damage * ((*it).Value() + 1));
 			if(环.类型 == 承伤伤害火环 || 环.类型 == 承伤命中火环 || 环.类型 == 承伤持续火环)damage = Int(damage * 1.3);
@@ -937,7 +1067,11 @@ int  Entity::Attacked(int harm, string type, int oppoplace, float oppoignore, fl
 			//HarmAdd(damage, 1);
 		}
 		if (type == "魔法") {
-			Prepare("在受到魔法攻击的瞬间");
+			Prepare("受到魔法攻击");
+			if (timeLine.is_open()) {
+				timeLine << "        " << 名称 << "受到魔伤" << harm;
+				timeLine << "，抗性" << 抗性 << "，最终承伤";
+			}
 			damage = Int(harm * 50.0 / (50 + max(int(抗性 - Int(oppoignore)), 0)));
 			For(状态, it) if ((*it).类型 == 魔法承伤)damage = Int(damage * ((*it).Value() + 1));
 			if (环.类型 == 承伤伤害火环 || 环.类型 == 承伤命中火环 || 环.类型 == 承伤持续火环)damage = Int(damage * 1.3);
@@ -950,6 +1084,8 @@ int  Entity::Attacked(int harm, string type, int oppoplace, float oppoignore, fl
 			//HarmAdd(damage, 2);
 		}
 		当前生命值 -= min(damage, 当前生命值);
+		if (timeLine.is_open()) { timeLine << min(damage, 当前生命值) << "，当前生命" << 当前生命值 << endl; }
+		if(timeLine.is_open()) { timeLine << "        " << 名称 << "受到伤害" << min(damage, 当前生命值) << "，当前生命" << 当前生命值 << endl; }
 		if (当前生命值 == 0)Dead();
 		else For(状态, it) if ((*it).类型 == 反伤)entity[1 - 阵营][oppoplace].Attacked(Int(damage * (*it).Value()));
 	}
@@ -963,6 +1099,10 @@ int  Entity::Attacked(int harm, string type, int oppoplace, float oppoignore, fl
 	if (Rand(oppohitrate + opposkill / (速度 * 0.3) - 闪避率)) {
 		if (type == "物理") {
 			Prepare("受到物理攻击");
+			if (timeLine.is_open()) {
+				timeLine << "        " << 名称 << "受到物伤" << harm;
+				timeLine << "，护甲" << 护甲 << "，最终承伤";
+			}
 			damage = Int(harm * 50.0 / (50 + max(int(护甲 - Int(oppoignore)), 0)));
 			For(状态, it) if ((*it).类型 ==物理承伤)damage = Int(damage * ((*it).Value() + 1));
 			if (环.类型 == 承伤伤害火环 || 环.类型 == 承伤命中火环 || 环.类型 == 承伤持续火环)damage = Int(damage * 1.3);
@@ -976,6 +1116,10 @@ int  Entity::Attacked(int harm, string type, int oppoplace, float oppoignore, fl
 		}
 		if (type == "魔法") {
 			Prepare("受到魔法攻击");
+			if (timeLine.is_open()) {
+				timeLine << "        " << 名称 << "受到魔伤" << harm;
+				timeLine << "，抗性" << 抗性 << "，最终承伤";
+			}
 			damage = Int(harm * 50.0 / (50 + max(int(抗性 - Int(oppoignore)), 0)));
 			For(状态, it) if ((*it).类型 == 魔法承伤)damage = Int(damage * ((*it).Value() + 1));
 			if (环.类型 == 承伤伤害火环 || 环.类型 == 承伤命中火环 || 环.类型 == 承伤持续火环)damage = Int(damage * 1.3);
@@ -988,6 +1132,7 @@ int  Entity::Attacked(int harm, string type, int oppoplace, float oppoignore, fl
 			//HarmAdd(damage, 2);
 		}
 		当前生命值 -= min(damage, 当前生命值);
+		if (timeLine.is_open()) { timeLine << min(damage, 当前生命值) << "，当前生命" << 当前生命值 << endl; }
 		if (当前生命值 == 0)Dead();
 		else For(状态, it) if ((*it).类型 == 反伤) { 总伤害 += Int(damage * (*it).Value()); entity[1 - 阵营][oppoplace].Attacked(Int(damage * (*it).Value())); }
 		Attached(p, status);
@@ -1004,19 +1149,21 @@ bool Entity::HasStatus(string statusName) {
 }
 void Entity::StatusTime() {
 	//for (int i = 0; i < 5; i++) { if (harmArray[i][0] > 0)harmArray[i][0]--; }
-	for (auto it = 状态.begin(); it != 状态.end(); ) {
+	For(状态, it) {
 		(*it).剩余时间 -= plank;
-		if ((*it).类型 == hot && Equal((*it).剩余时间,Int((*it).剩余时间))) {
+		if ((*it).类型 == hot && Equal((*it).剩余时间, Int((*it).剩余时间))) {
 			Healed((*it).Value());
-			if (timePrinted == 0) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
-			if (timeLine.is_open())timeLine << "    " << 名称 << "受到" << (*it).名称 << (*it).Value() << "，当前生命" << 当前生命值 << endl;
 		}
 		if ((*it).类型 == dot && Equal((*it).剩余时间, Int((*it).剩余时间))) {
 			Attacked((*it).Value());
-			if (timePrinted == 0) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
-			if (timeLine.is_open())timeLine << "    " << 名称 << "受到" << (*it).名称 << (*it).Value() << "，当前生命" << 当前生命值 << endl;
 		}
-		if ((*it).剩余时间 == 0) 状态.erase(it);
+	}
+	for (auto it = 状态.begin(); it != 状态.end(); ) {
+		if ((*it).剩余时间 == 0) { 
+			if (timePrinted == 0 && timeLine.is_open()) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
+			if (timeLine.is_open())timeLine << "    " << 名称 << "的" << (*it).名称 << "状态结束" << endl;
+			状态.erase(it); it = 状态.begin();
+		}
 		else it++;
 	}
 }
@@ -1029,33 +1176,60 @@ void Entity::SkillTime() {
 	if (Int(冷却等待时间 / plank) < Int(curcd / plank)) return;
 
 	冷却等待时间 = 0;
-	For(技能, it) { if ((*it).施放条件 == 0 && (*it).AllowRelease(this) == 1) { (*it).Release(this); return; } }
-	For(技能, it) { if ((*it).施放条件 == 3 && (*it).AllowRelease(this) == 1) { (*it).Release(this); return; } }
-	For(技能, it) { if ((*it).施放条件 == 1 && (*it).AllowRelease(this) == 1) { (*it).Release(this); return; } }
-	For(技能, it) { if ((*it).施放条件 == 2 && (*it).AllowRelease(this) == 1) { (*it).Release(this); return; } }
-	For(技能, it) { if ((*it).施放条件 == 3 && (*it).AllowRelease(this) == 2) { (*it).Release(this); return; } }
-	For(技能, it) { if ((*it).施放条件 == 4 && (*it).AllowRelease(this) == 1) { (*it).Release(this); return; } }
-	For(技能, it) { if ((*it).施放条件 == 5 && (*it).AllowRelease(this) == 1) { (*it).Release(this); return; } }
+	For(技能, it) { if ((*it).施放条件 == 0 && (*it).AllowRelease(this) == 1) { 冷却时间增加 = 0; (*it).Release(this); if (!Equal(冷却时间增加, -4)) 冷却时间增加 = (*it).冷却时间增加; return; } }
+	For(技能, it) { if ((*it).施放条件 == 3 && (*it).AllowRelease(this) == 1) { 冷却时间增加 = 0; (*it).Release(this); if (!Equal(冷却时间增加, -4)) 冷却时间增加 = (*it).冷却时间增加; return; } }
+	For(技能, it) { if ((*it).施放条件 == 1 && (*it).AllowRelease(this) == 1) { 冷却时间增加 = 0; (*it).Release(this); if (!Equal(冷却时间增加, -4)) 冷却时间增加 = (*it).冷却时间增加; return; } }
+	For(技能, it) { if ((*it).施放条件 == 2 && (*it).AllowRelease(this) == 1) { 冷却时间增加 = 0; (*it).Release(this); if (!Equal(冷却时间增加, -4)) 冷却时间增加 = (*it).冷却时间增加; return; } }
+	For(技能, it) { if ((*it).施放条件 == 3 && (*it).AllowRelease(this) == 2) { 冷却时间增加 = 0; (*it).Release(this); if (!Equal(冷却时间增加, -4)) 冷却时间增加 = (*it).冷却时间增加; return; } }
+	For(技能, it) { if ((*it).施放条件 == 4 && (*it).AllowRelease(this) == 1) { 冷却时间增加 = 0; (*it).Release(this); if (!Equal(冷却时间增加, -4)) 冷却时间增加 = (*it).冷却时间增加; return; } }
+	For(技能, it) { if ((*it).施放条件 == 5 && (*it).AllowRelease(this) == 2) { 冷却时间增加 = 0; (*it).Release(this); if (!Equal(冷却时间增加, -4)) 冷却时间增加 = (*it).冷却时间增加; return; } }
 	int skillcount = 0; For(技能, it)if ((*it).施放条件 == 5 && (*it).技能设置a == 1) skillcount++;
 	if (循环模式 == 轮流施放 || 循环模式 == 默认施放 && skillcount <= 2) {
 		int on = 0;
 		For(技能, it) {
 			if ((*it).名称 == 上个技能)on = 1;
 			else if (on == 1 && (*it).施放条件 == 5 && (*it).技能设置a == 1) {
-				(*it).Release(this); return;
+				冷却时间增加 = 0; (*it).Release(this); if (!Equal(冷却时间增加, -4)) 冷却时间增加 = (*it).冷却时间增加;
+				return;
 			}
 		}
 		For(技能, it) {
 			if ((*it).施放条件 == 5 && (*it).技能设置a == 1) {
-				(*it).Release(this); return;
+				冷却时间增加 = 0; (*it).Release(this); if (!Equal(冷却时间增加, -4)) 冷却时间增加 = (*it).冷却时间增加;
+				return;
 			}
 		}
 	}
 	else if (循环模式 == 随机施放 || 循环模式 == 默认施放 && skillcount >= 3) {
 		Order();
 		for (int i = 0; i < MAX_GROUP; i++) {
-			if (order[i] < 技能.size() && 技能[i].施放条件 == 5 && 技能[i].技能设置a == 1) {
-				技能[i].Release(this); return;
+			if (order[i] < 技能.size() && 技能[order[i]].施放条件 == 5 && 技能[order[i]].技能设置a == 1) {
+				冷却时间增加 = 0; 技能[order[i]].Release(this); if (!Equal(冷却时间增加, -4)) 冷却时间增加 = 技能[order[i]].冷却时间增加;
+				return;
+			}
+		}
+	}
+}
+void Entity::ViolentTime() {
+	if (狂暴技能.类型 == "毁灭一击") {
+		狂暴技能.冷却等待时间 += plank;
+		狂暴技能.冷却等待时间 = float(Int(狂暴技能.冷却等待时间 * 1000)) / 1000;
+		if (Equal(狂暴技能.冷却等待时间, 狂暴技能.首次施放时间)) {
+			if (timePrinted == 0 && timeLine.is_open()) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
+			if (timeLine.is_open()) { timeLine << "    " << 名称 << "施放了毁灭一击" << endl; }
+			if (timeLine.is_open())
+			for (int i = 0; i < MAX_GROUP; i++)if (entity[1][i].存活 != 0)entity[1][i].Attacked();
+		}
+	}
+	else if (狂暴技能.类型 == "普通技能") {
+		狂暴技能.冷却等待时间 += plank;
+		狂暴技能.冷却等待时间 = float(Int(狂暴技能.冷却等待时间 * 1000)) / 1000;
+		if (Equal(狂暴技能.冷却等待时间, 狂暴技能.首次施放时间)) {
+			if (狂暴技能.内容.AllowRelease(this))狂暴技能.内容.Release(this);
+		}
+		else if (狂暴技能.冷却等待时间 > 狂暴技能.首次施放时间) {
+			if (Equal(狂暴技能.内容.冷却时间增加, 狂暴技能.冷却等待时间 - 狂暴技能.首次施放时间)) {
+				if (狂暴技能.内容.AllowRelease(this)) { 狂暴技能.内容.Release(this); 狂暴技能.冷却等待时间 = 狂暴技能.首次施放时间; }
 			}
 		}
 	}
@@ -1169,7 +1343,7 @@ int  Skill::AllowRelease(Entity* owner) {
 		}
 		if (count >= Int(5 - 技能设置a))return 1;
 	}
-	if (施放条件 == 可设为始终轮流或循环 && 技能设置a == 2) return 1;
+	if (施放条件 == 可设为始终轮流或循环) return 技能设置a;
 	return 0;
 }
 void Skill::TargetSelect(Entity* owner) {
@@ -1322,20 +1496,24 @@ void Skill::TargetSelect(Entity* owner) {
 		}
 	}
 	Order(); owner->我方目标 = -1;
-	for (int i = 0; i < MAX_GROUP; i++) {
-		if (entity[owner->阵营][order[i]].存活 && (owner->我方目标 == -1 ||
-			entity[owner->阵营][order[i]].当前生命值 / entity[owner->阵营][order[i]].体质 < entity[owner->阵营][owner->我方目标].当前生命值 / entity[owner->阵营][owner->我方目标].体质))
-		{
-			owner->我方目标 = order[i];
+	if (对象 == "对自身")owner->我方目标 = owner->站位;
+	else {
+		for (int i = 0; i < MAX_GROUP; i++) {
+			if (entity[owner->阵营][order[i]].存活 && (owner->我方目标 == -1 ||
+				entity[owner->阵营][order[i]].当前生命值 / entity[owner->阵营][order[i]].体质 < entity[owner->阵营][owner->我方目标].当前生命值 / entity[owner->阵营][owner->我方目标].体质))
+			{
+				owner->我方目标 = order[i];
+			}
 		}
 	}
 }
 void Skill::Release(Entity* owner) {
+	if (timeLine.is_open()) { 
+		if (timePrinted == 0) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
+		timeLine << "    " << owner->名称 << "施放技能" << 名称 << endl;
+	}
 	TargetSelect(owner);
-	if (timePrinted == 0) { timeLine << endl << Time(timeClock) << endl; timePrinted = 1; }
-	if (timeLine.is_open())timeLine << "    " << owner->名称 << "施放技能" << 名称 << endl;
 	mem.名称 = "";
-	owner->冷却时间增加 = 0;
 	if (伤害类型 == "物理")owner->Prepare("发动物理攻击");
 	if (伤害类型 == "魔法")owner->Prepare("发动魔法攻击");
 	if (伤害类型 == "回复")owner->Prepare("使用回复技能");
@@ -1344,6 +1522,21 @@ void Skill::Release(Entity* owner) {
 	if (伤害类型 == "物理") value = Int(value * owner->物伤);
 	if (伤害类型 == "魔法") value = Int(value * owner->魔伤);
 	if (伤害类型 == "回复") value = Int(value * owner->回复效果);
+	if (timeLine.is_open()) {
+		timeLine << "        " << "技能参数列表[ ";
+		if (!Equal(系数[0], 0))timeLine << "力量" << owner->力量 << "×" << 系数[0] * 100 << "% ";
+		if (!Equal(系数[1], 0))timeLine << "魔力" << owner->魔力 << "×" << 系数[1] * 100 << "% ";
+		if (!Equal(系数[2], 0))timeLine << "技巧" << owner->技巧 << "×" << 系数[2] * 100 << "% ";
+		if (!Equal(系数[3], 0))timeLine << "速度" << owner->速度 << "×" << 系数[3] * 100 << "% ";
+		if (!Equal(系数[4], 0))timeLine << "体质" << owner->体质 << "×" << 系数[4] * 100 << "% ";
+		if (!Equal(系数[5], 0))timeLine << "护甲" << owner->护甲 << "×" << 系数[5] * 100 << "% ";
+		if (!Equal(系数[6], 0))timeLine << "抗性" << owner->抗性 << "×" << 系数[6] * 100 << "% ";
+		if (!Equal(系数[7], 0))timeLine << "武威" << owner->武威 << "×" << 系数[7] * 100 << "% ";
+		if (伤害类型 == "物理") timeLine << "物伤" << (owner->物伤-1) * 100 << "% ";
+		if (伤害类型 == "魔法") timeLine << "魔伤" << (owner->魔伤-1) * 100 << "% ";
+		if (伤害类型 == "回复") timeLine << "回复效果" << (owner->回复效果-1) * 100 << "% ";
+		timeLine << "] = " << value << endl;
+	}
 	Status status(this, owner); Status status0(状态名称);
 	float total_critrate = owner->暴击率 + 基础暴击率 + owner->技巧 / 2000.0;
 	Order();
@@ -1352,18 +1545,18 @@ void Skill::Release(Entity* owner) {
 			if (Rand(total_critrate)) value = Int(value * 1.5);
 			if (entity[1 - owner->阵营][owner->敌方目标].种族 == 额外伤害种族)value = Int(value + value * 额外伤害比例);
 			int ret = 0;
-			if (状态名称 == "")ret = entity[1 - owner->阵营][owner->敌方目标].Attacked(value, 伤害类型, owner->站位, owner->无视护甲, 基础命中率 + owner->命中率, owner->技巧);
+			if (状态名称 == "" || Equal(概率, -1))ret = entity[1 - owner->阵营][owner->敌方目标].Attacked(value, 伤害类型, owner->站位, owner->无视护甲, 基础命中率 + owner->命中率, owner->技巧);
 			else ret = entity[1 - owner->阵营][owner->敌方目标].Attacked(value, 伤害类型, owner->站位, owner->无视护甲, 基础命中率 + owner->命中率, owner->技巧, 概率 + owner->异常附加率, status);
-			if (ret != 0 && owner->物理单吸 != 0)owner->Healed(ret * owner->物理单吸 * owner->吸血效果);
+			if (ret != 0 && (owner->物理单吸 + 吸血) != 0)owner->Healed(ret * (owner->物理单吸 + 吸血)* owner->吸血效果);
 			owner->总伤害 += ret;
 		}
 		if (伤害类型 == "魔法") {
 			if (Rand(total_critrate)) value = Int(value * 1.5);
 			if (entity[1 - owner->阵营][owner->敌方目标].种族 == 额外伤害种族)value = Int(value + value * 额外伤害比例);
 			int ret = 0;
-			if (状态名称 == "")ret = entity[1 - owner->阵营][owner->敌方目标].Attacked(value, 伤害类型, owner->站位, owner->无视护甲, 基础命中率 + owner->命中率, owner->技巧);
+			if (状态名称 == "" || Equal(概率, -1))ret = entity[1 - owner->阵营][owner->敌方目标].Attacked(value, 伤害类型, owner->站位, owner->无视护甲, 基础命中率 + owner->命中率, owner->技巧);
 			else ret = entity[1 - owner->阵营][owner->敌方目标].Attacked(value, 伤害类型, owner->站位, owner->无视抗性, 基础命中率 + owner->命中率, owner->技巧, 概率 + owner->异常附加率, status);
-			if (ret != 0 && owner->魔法单吸 != 0)owner->Healed(ret * owner->魔法单吸 * owner->吸血效果);
+			if (ret != 0 && (owner->魔法单吸 + 吸血) != 0)owner->Healed(ret * (owner->魔法单吸 + 吸血)* owner->吸血效果);
 			owner->总伤害 += ret;
 		}
 	}
@@ -1371,12 +1564,13 @@ void Skill::Release(Entity* owner) {
 		if (伤害类型 == "物理") {
 			for (int i = 0; i < MAX_GROUP; i++) {
 				if (entity[1 - owner->阵营][order[i]].存活 != 0) {
-					if (Rand(total_critrate)) value = Int(value * 1.5);
-					if (entity[1 - owner->阵营][order[i]].种族 == 额外伤害种族)value = Int(value + value * 额外伤害比例);
+					int harm = value;
+					if (Rand(total_critrate)) harm = Int(value * 1.5);
+					if (entity[1 - owner->阵营][order[i]].种族 == 额外伤害种族)harm = Int(harm + harm * 额外伤害比例); 
 					int ret = 0;
-					if (状态名称 == "")ret = entity[1 - owner->阵营][order[i]].Attacked(value, 伤害类型, owner->站位, owner->无视护甲, 基础命中率 + owner->命中率, owner->技巧);
-					else ret = entity[1 - owner->阵营][order[i]].Attacked(value, 伤害类型, owner->站位, owner->无视护甲, 基础命中率 + owner->命中率, owner->技巧, 概率 + owner->异常附加率, status);
-					if (ret != 0 && owner->物理单吸 != 0)owner->Healed(ret * owner->物理单吸 * owner->吸血效果);
+					if (状态名称 == "" || Equal(概率, -1))ret = entity[1 - owner->阵营][order[i]].Attacked(harm, 伤害类型, owner->站位, owner->无视护甲, 基础命中率 + owner->命中率, owner->技巧);
+					else ret = entity[1 - owner->阵营][order[i]].Attacked(harm, 伤害类型, owner->站位, owner->无视护甲, 基础命中率 + owner->命中率, owner->技巧, 概率 + owner->异常附加率, status);
+					if (ret != 0 && (owner->物理单吸 + 吸血) != 0)owner->Healed(ret * (owner->物理单吸 + 吸血)* owner->吸血效果);
 					owner->总伤害 += ret;
 				}
 			}
@@ -1384,12 +1578,13 @@ void Skill::Release(Entity* owner) {
 		if (伤害类型 == "魔法") {
 			for (int i = 0; i < MAX_GROUP; i++) {
 				if (entity[1 - owner->阵营][order[i]].存活 != 0) {
-					if (Rand(total_critrate)) value = Int(value * 1.5);
-					if (entity[1 - owner->阵营][order[i]].种族 == 额外伤害种族)value = Int(value + value * 额外伤害比例);
+					int harm = value;
+					if (Rand(total_critrate)) harm = Int(harm * 1.5);
+					if (entity[1 - owner->阵营][order[i]].种族 == 额外伤害种族)harm = Int(harm + harm * 额外伤害比例);
 					int ret = 0;
-					if (状态名称 == "")ret = entity[1 - owner->阵营][order[i]].Attacked(value, 伤害类型, owner->站位, owner->无视抗性, 基础命中率 + owner->命中率, owner->技巧);
-					else ret = entity[1 - owner->阵营][order[i]].Attacked(value, 伤害类型, owner->站位, owner->无视抗性, 基础命中率 + owner->命中率, owner->技巧, 概率 + owner->异常附加率, status); 
-					if (ret != 0 && owner->魔法单吸 != 0)owner->Healed(ret * owner->魔法单吸 * owner->吸血效果);
+					if (状态名称 == "" || Equal(概率, -1))ret = entity[1 - owner->阵营][order[i]].Attacked(harm, 伤害类型, owner->站位, owner->无视抗性, 基础命中率 + owner->命中率, owner->技巧);
+					else ret = entity[1 - owner->阵营][order[i]].Attacked(harm, 伤害类型, owner->站位, owner->无视抗性, 基础命中率 + owner->命中率, owner->技巧, 概率 + owner->异常附加率, status); 
+					if (ret != 0 && (owner->魔法单吸 + 吸血) != 0)owner->Healed(ret * (owner->魔法单吸 + 吸血)* owner->吸血效果);
 					owner->总伤害 += ret; 
 				}
 			}
@@ -1398,14 +1593,13 @@ void Skill::Release(Entity* owner) {
 	if (对象 == "对自身") {
 		if (伤害类型 == "回复") {
 			owner->Healed(value);
-			owner->Attached(status0);
-			owner->Attached(status);
+			if (状态名称 != "" && !Equal(概率, -1)) { owner->Attached(status0); owner->Attached(status); }
 		}
 	}
 	if (对象 == "对我方单体") {
 		if (伤害类型 == "回复") {
-			if (owner->我方目标 == owner->站位) owner->Attached(status0);
 			entity[owner->阵营][owner->我方目标].Healed(value);
+			if (状态名称 != "" && !Equal(概率, -1) && owner->我方目标 == owner->站位) owner->Attached(status0);
 			if (状态名称 != "" && !Equal(概率, -1))entity[owner->阵营][owner->我方目标].Attached(status);
 		}
 	}
@@ -1429,27 +1623,10 @@ void Skill::Release(Entity* owner) {
 		}
 		owner->Attach(memGroup, mem);
 	}
-	if(!Equal(owner->冷却时间增加,-4)) owner->冷却时间增加 = 冷却时间增加;
 	for (int i = 0; i < 28; i++)owner->增幅[i] = 0;
 	owner->上个技能 = 名称;
-	if (timeLine.is_open() && (伤害类型 == "物理" || 伤害类型 == "魔法")) {
-		timeLine << "        当前生命值：";
-		for (int i = 0; i < MAX_GROUP; i++) {
-			if (entity[1 - owner->阵营][i].存活 != 0) timeLine << entity[1 - owner->阵营][i].名称 << entity[1 - owner->阵营][i].当前生命值 << "  ";
-		}
-		timeLine << endl;
-	}
-	if (timeLine.is_open() && 伤害类型 == "回复") {
-		timeLine << "        当前生命值：";
-		for (int i = 0; i < MAX_GROUP; i++) {
-			if (entity[owner->阵营][i].存活 != 0) timeLine << entity[owner->阵营][i].名称 << entity[owner->阵营][i].当前生命值 << "  ";
-		}
-		timeLine << endl;
-	}
 }
 string Skill::Discription(int index) {
-	//返回技能设置的描述，和游戏里一模一样。
-    //群奶技能有两个描述，index = 0返回自奶的奶线，index = 1返回奶队友奶线
 	if (index == 0) {
 		if (技能设置a == 0)return "从不施放";
 		if (施放条件 == 生命少于百分比时施放) {
@@ -1566,15 +1743,15 @@ void Skill::Clear() {
 	对象 = "";
 	伤害类型 = "";
 }
-void ViolentSkill::Release(Entity* owner) {
-
-}
 void ViolentSkill::Clear() {
 	名称 = "";
 	重伤失效 = 1;
 	类型 = "";
 	首次施放时间 = -1;
 	冷却等待时间 = 0;
+	回复抑制 = 0;
+	吸血抑制 = 0;
+	治疗抑制 = 0;
 	内容.Clear();
 }
 
@@ -1650,7 +1827,7 @@ void LoadMonster(string src) {
 					skill.系数[4] = dat.HasMember("体质系数") ? dat["体质系数"].GetFloat() : 0;
 					skill.系数[5] = dat.HasMember("护甲系数") ? dat["护甲系数"].GetFloat() : 0;
 					skill.系数[6] = dat.HasMember("抗性系数") ? dat["抗性系数"].GetFloat() : 0;
-					skill.系数[7] = dat.HasMember("武威系数") ? dat["武威系数"].GetFloat() : 1;
+					skill.系数[7] = dat.HasMember("武威系数") ? dat["武威系数"].GetFloat() : 0;
 					skill.伤害类型 = dat.HasMember("伤害类型") ? dat["伤害类型"].GetString() : "";
 					skill.概率 = dat.HasMember("概率") ? dat["概率"].GetFloat() : 0;
 					skill.状态名称 = dat.HasMember("状态名称") ? dat["状态名称"].GetString() : "";
@@ -1709,6 +1886,7 @@ void LoadMonster(string src) {
 					}
 					entity[0][j].面板无视护甲 = dat.HasMember("无视护甲") ? dat["无视护甲"].GetInt() : 0;
 					entity[0][j].面板无视抗性 = dat.HasMember("无视抗性") ? dat["无视抗性"].GetInt() : 0;
+					entity[0][j].狂暴技能.死亡关联 = dom[i].HasMember("关联") ? dom[i]["关联"].GetString() : "";
 					entity[0][j].狂暴技能.类型 = dat.HasMember("类型") ? dat["类型"].GetString() : "";
 					entity[0][j].狂暴技能.首次施放时间 = dat.HasMember("首次施放时间") ? dat["首次施放时间"].GetInt() : -1;
 					entity[0][j].狂暴技能.内容.冷却时间增加 = dat.HasMember("施放时间间隔") ? dat["施放时间间隔"].GetFloat() : -1;
