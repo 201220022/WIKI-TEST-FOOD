@@ -4,9 +4,9 @@ import cv2
 import pytesseract
 import pyautogui
 
-pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = './Tesseract-OCR/tesseract.exe'
 
-f = open("Texts/attributes.txt", "a")
+f = open("../Texts/attributes.txt", "a")
 
 # OW, OH = 5, 78
 OW, OH = 0, 0
