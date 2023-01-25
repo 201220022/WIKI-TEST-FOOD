@@ -3,18 +3,17 @@ import numpy as np
 from skimage import metrics
 import pyautogui
 
-RESOURCE_PATH = "./Hero-Avatar/"
-
 f = open("../Texts/hero-model.txt", "w", encoding="utf-8")
 
 # OW, OH = 5, 78
 OW, OH = 0, 0
 
+IMAGE_NUMBER = 33
+
 def read_all_image():
 	img_list = []
-	for i in range(1, 33):
-		img_path = RESOURCE_PATH + str(i) + ".bmp"
-		img = cv2.imread(img_path)
+	for i in range(1, IMAGE_NUMBER + 1):
+		img = cv2.imread("./Hero-Avatar/%d.bmp" % i)
 		img = img[200:350,120:270,:3]
 		img_list.append(img)
 	return img_list
@@ -23,13 +22,12 @@ img_list = read_all_image()
 
 def top_similarity(image, img_list):
 	similarity_arr = []
-	for i in range(len(img_list)):
-		img = img_list[i]
-		sim = metrics.structural_similarity(image, img, channel_axis=2)
-		similarity_arr.append((sim, img, i+1))
+	for i in range(1, IMAGE_NUMBER + 1):
+		sim = metrics.structural_similarity(image, img_list[i-1], channel_axis=2)
+		similarity_arr.append((i, sim))
 
-	similarity_arr.sort(key = lambda x: -x[0])
-	return similarity_arr[0][2]
+	similarity_arr.sort(key = lambda x: -x[1])
+	return similarity_arr[0][0]
 
 def capture():
 	s = pyautogui.screenshot()
