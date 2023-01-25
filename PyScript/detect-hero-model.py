@@ -23,10 +23,10 @@ img_list = read_all_image()
 
 def top_similarity(image, img_list):
 	similarity_arr = []
-	for i in range(1, 28):
-		img = img_list[i-1]
+	for i in range(len(img_list)):
+		img = img_list[i]
 		sim = metrics.structural_similarity(image, img, channel_axis=2)
-		similarity_arr.append((sim, img, i))
+		similarity_arr.append((sim, img, i+1))
 
 	similarity_arr.sort(key = lambda x: -x[0])
 	return similarity_arr[0][2]
