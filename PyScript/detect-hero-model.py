@@ -12,7 +12,7 @@ OW, OH = 0, 0
 
 def read_all_image():
 	img_list = []
-	for i in range(1, 28):
+	for i in range(1, 33):
 		img_path = RESOURCE_PATH + str(i) + ".bmp"
 		img = cv2.imread(img_path)
 		img = img[200:350,120:270,:3]
