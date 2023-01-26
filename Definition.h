@@ -1,4 +1,4 @@
-﻿//#pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
+﻿#pragma comment(linker, "/subsystem:windows /entry:mainCRTStartup")
 #pragma warning(disable:4267)
 #pragma warning(disable:4244)
 #pragma warning(disable:4305)
@@ -24,14 +24,14 @@
 #include <vector>
 #include <map>
 #include <sstream>
+#include <random>
+#include <shlwapi.h>
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 using namespace std;
 #define _CRT_SECURE_NO_WARNINGS
-#define KEY_DOWN(VK_NONAME) ((GetAsyncKeyState(VK_NONAME) & 0x8000) ? 1:0)
 
-#define MAX_GROUP 7
 #define MAX_ATTRIBUTE 27
 #define plank 0.05
 
@@ -243,6 +243,7 @@ using namespace std;
 #define 物理强健巨龙 21
 #define 魔法强健巨龙 22
 
+#define KEY_DOWN(VK_NONAME) ((GetAsyncKeyState(VK_NONAME) & 0x8000) ? 1:0)
 #define Inbox(l, u, r, d) InBox(mouse_x,mouse_y,l,u,r,d)
 #define Pen(name,r,g,b) HPEN name = CreatePen(PS_SOLID, 1, RGB(r,g,b));
 #define Brush(name,r,g,b) HBRUSH name = CreateSolidBrush(RGB(r,g,b));

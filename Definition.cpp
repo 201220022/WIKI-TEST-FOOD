@@ -18,3 +18,4 @@ Pen(pen_brown, 141, 130, 112); Brush(brush_brown, 141, 130, 112);
 Pen(pen_coffee, 33, 30, 25); Brush(brush_coffee, 33, 30, 25);
 Pen(pen_white, 200, 200, 200); Brush(brush_white, 200, 200, 200);
 Pen(pen_recast, 16, 20, 16); Brush(brush_recast, 16, 20, 16);
+Pen(pen_red, 255, 0, 0); Brush(brush_red, 255, 0, 0);

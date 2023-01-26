@@ -107,6 +107,36 @@ string UTF8_2_GBK(string utf8Str) {
 	str2 = NULL;
 	return outGBK;
 }
+int Str2Attribute(string src) {
+	if (src == "力量")return 力量编号;
+	if (src == "魔力")return 魔力编号;
+	if (src == "技巧")return 技巧编号;
+	if (src == "速度")return 速度编号;
+	if (src == "体质")return 体质编号;
+	if (src == "护甲")return 护甲编号;
+	if (src == "抗性")return 抗性编号;
+	if (src == "武威")return 武威编号;
+	if (src == "物伤")return 物伤编号;
+	if (src == "魔伤")return 魔伤编号;
+	if (src == "持续")return 持续编号;
+	if (src == "物理单吸")return 物理单吸编号;
+	if (src == "物理群吸")return 物理群吸编号;
+	if (src == "魔法单吸")return 魔法单吸编号;
+	if (src == "魔法群吸")return 魔法群吸编号;
+	if (src == "命中率")return 命中率编号;
+	if (src == "闪避率")return 闪避率编号;
+	if (src == "暴击率")return 暴击率编号;
+	if (src == "异常附加率")return 异常附加率编号;
+	if (src == "卸负")return 卸负编号;
+	if (src == "无视护甲")return 无视护甲编号;
+	if (src == "无视抗性")return 无视抗性编号;
+	if (src == "物伤格挡")return 物伤格挡编号;
+	if (src == "魔伤格挡")return 魔伤格挡编号;
+	if (src == "回复效果")return 回复效果编号;
+	if (src == "吸血效果")return 吸血效果编号;
+	if (src == "治疗效果")return 治疗效果编号;
+	return -1;
+}
 
 wchar_t wstr[50]; 
 void StringTran(string src) {
@@ -163,6 +193,7 @@ bool InBox(int mouse_x, int mouse_y, int l, int u, int r, int d) {
 	if (mouse_x > l && mouse_x < r && mouse_y>u && mouse_y < d)return true;
 	return false;
 }
+/*
 int order[7];
 void Order() {
 	int box[7] = { 0,0,0,0,0,0,0 };
@@ -172,6 +203,21 @@ void Order() {
 		if (box[t] == 0) {
 			box[t] = 1;
 			order[c] = t;
+			c++;
+		}
+	}
+}
+*/
+vector<int> order;
+void Order(int num) {
+	order.clear();
+	int box[7] = { 0,0,0,0,0,0,0 };
+	int c = 0;
+	while (c < num) {
+		int t = rand() % num;
+		if (box[t] == 0) {
+			box[t] = 1;
+			order.push_back(t);
 			c++;
 		}
 	}
@@ -201,20 +247,22 @@ string Time(float t) {
 	return ret;
 }
 int End() {
-	extern Entity entity[2][MAX_GROUP];
+	extern vector<Entity> entity[2];
 	bool alive;
 	alive = 0;
-	//for (int i = 0; i < 4; i++)cout << entity[1][i].存活 << " "; cout << endl;
-	for (int i = 0; i < 4; i++)if (entity[1][i].存活 == 1)alive = 1;
-	if (alive == 0)return 2;
+	for (int i = 0; i < entity[1].size(); i++)if (entity[1][i].存活 == 1)alive = 1;
+	if (alive == 0) {
+		return 2;
+	}
 	alive = 0;
-	//for (int i = 0; i < MAX_GROUP; i++)cout << entity[0][i].存活 << " "; cout << endl;
-	for (int i = 0; i < MAX_GROUP; i++)if (entity[0][i].存活 == 1)alive = 1;
-	if (alive == 0)return 1;
+	for (int i = 0; i < entity[0].size(); i++)if (entity[0][i].存活 == 1)alive = 1;
+	if (alive == 0) {
+		return 1;
+	}
 	return 0;
 }
 
-int basex, basey;
+int basex, basey, clickInterval;
 struct train {
 	bool data[11][6];
 	int number;
@@ -320,15 +368,16 @@ void PutInput() {
 	file << monster << endl;
 }
 void GetBase() {
-	fstream infile("Texts/偏移量.txt");
+	fstream infile("Texts/设备适配.txt");
 	infile >> basex;
 	infile >> basey;
+	infile >> clickInterval;
 	infile.close();
 }
 void PutBase() {
 	fstream file;
-	file.open("Texts/偏移量.txt", ofstream::out | ofstream::ate);
-	file << basex << endl << basey << endl;
+	file.open("Texts/设备适配.txt", ofstream::out | ofstream::ate);
+	file << basex << endl << basey << endl << clickInterval << endl;
 }
 void GetTrain() {
 	Free(trains);
@@ -528,13 +577,26 @@ void ReadRecast(HDC hdc, int m) {
 	//GetAttribute(m);
 }
 
-double normal(double mean, double stddev) {
-	return 0;
+float Normal(float mean, float stddev) {
+	random_device rd;
+	mt19937 gen(rd());
+	float sample;
+	normal_distribution<float> d(mean, stddev);
+	sample = d(gen);
+	return sample;
 }
 float GetRand(float l, float r) {
 	float out = l - 1;
-	while (out <= l || out >= r)out = normal((1 + r) / 2, (r - l) / 100);
+	while (out <= l || out >= r)out = Normal((l + r) / 2, (r - l) / 6);
 	return out;
+}
+void Click(int l, int u, int r, int d, int t) {
+	if (t == 1000)t = clickInterval;
+	SetCursorPos(GetRand(l, r), GetRand(u, d));
+	mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+	Sleep(GetRand(77, 113));
+	mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+	Sleep(GetRand(t, t + 64));
 }
 
 

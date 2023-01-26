@@ -148,7 +148,7 @@ public:
 	string 名称;
 	string 种族;
 	bool 阵营; int 站位; int 存活, 当前生命值;
-	float 冷却时间增加, 冷却等待时间; int 循环模式; string 上个技能;
+	float 冷却时间增加, 冷却等待时间; int 循环模式; string 上个技能; int 下个技能;
 	int 攻击偏好, 我方目标, 敌方目标;
 
 	float 面板[28], 增幅[28];

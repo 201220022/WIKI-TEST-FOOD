@@ -1,31 +1,25 @@
 ﻿#include "Definition.h"
+#include "Pub.h"
 #include "Core.h"
 #include "Tools.h"
-HWND hwndApp, hwndEye, hwndGame;          //窗口
-HDC hdc, hdcApp, hdcEye, hdcGame, hdcDesk;//窗口上的画布
-//hdc：缓冲画布，hdcApp：wiki测试服的画布，hdcEye：文字识别需要的缓冲画布，hdcDesk：电脑显示屏
-Entity entity[2][MAX_GROUP]; //entity[0][i]是怪，entity[1][i]是冒险者
+#include "WarForce.h"
+HWND hwndApp, hwndEye, hwndGame, hwndDesk;
+HDC hdc, hdcApp, hdcEye, hdcGame, hdcDesk;
+vector<Entity> entity[2];
 InputInfo inputs[5][4];
 RelicInfo 遗迹;
-float timeClock; fstream timeLine; bool timePrinted; bool allowInterval = 1;
-int state, curplace, cursuit;//state是当前wiki测试服所处的状态。
-int mouse_x, mouse_y; extern int basex, basey;//mouse_x, mouse_y是鼠标点击的位置。basex, basey与文字识别有关，和计算器无关
-string monster, tstr; int th, th2, th3;//当前正在输入的字符串。
+int state, curplace, cursuit;
+float timeClock; fstream timeLine; bool timePrinted; bool allowInterval = 1; bool painted = 0;
+int tempa = 0; string monster, tstr; int th, th2, th3;
+
 void Select() {
-	/*
-	这个函数跟据选择的装备、输入的属性，显示冒险者的各种信息
-	Picture是我封装好了的图片显示函数
-	Picture(hdc, "1.jpg");将图片显示到（0,0）位置
-	Picture(hdc, "1.jpg"，x, y);将图片显示到（x, y）位置
-	Picture(hdc, "1.jpg"，x, y, 1);将图片透明地显示到（x, y）位置，图片中像素为(1,1,1)的像素点不显示。
-	Picture(hdc, "1.jpg"，x1, y1, x2, y2);将图片伸缩到(x2,y2)大小，并显示到(x1.y1)
-	*/
+	//跟据选择的装备、输入的属性，显示冒险者的各种信息
 	Picture(hdc, "Pictures/背景/出征.jpg");
 	Picture(hdc, "Pictures/英雄/" + inputs[cursuit][curplace].职业 + "/海报.jpg");
 	Picture(hdc, "Pictures/英雄/" + inputs[cursuit][curplace].职业 + "/技能.jpg", 650, 360, 300, 320);
-	PBSelect(hdc, pen_brown, brush_brown);//选择画笔和画刷，见definition.cpp
-	Rectangle(hdc, 0, 0, 357, 40);//画矩形
-	TextSelect(hdc, font_job, 0, 0, 0);//选择文字格式，见definition.cpp
+	PBSelect(hdc, pen_brown, brush_brown);
+	Rectangle(hdc, 0, 0, 357, 40);
+	TextSelect(hdc, font_job, 0, 0, 0);
 	StringOut(hdc, 188 - inputs[cursuit][curplace].职业.length() * 8, 9, inputs[cursuit][curplace].职业);
 	TextOut(hdc, 15, 9, TEXT("<"), wcslen(TEXT("<")));
 	TextOut(hdc, 330, 9, TEXT(">"), wcslen(TEXT(">")));
@@ -125,40 +119,40 @@ void SelectRelic() {
 	StringOut(hdc, 630 - monster.length() * 8, 208, monster);
 }
 void StartWar() {
-	for (int i = 0; i < 4; i++)entity[1][i].Init(i);
+	for (int i = 0; i < entity[1].size(); i++)entity[1][i].Init(i);
 	LoadMonster(monster);
-	for(int i=0;i<4;i++){
+	for(int i=0;i < entity[1].size(); i++) {
 		if (entity[1][i].存活 != 0) {
 			entity[1][i].面板[回复效果编号] += 1;
 			entity[1][i].面板[吸血效果编号] += 1;
 			entity[1][i].面板[治疗效果编号] += 1;
 		}
 	}
-	for (int i = 0; i < MAX_GROUP; i++) {
+	for (int i = 0; i < entity[0].size(); i++) {
 		if (entity[0][i].存活 != 0) {
 			entity[0][i].面板[回复效果编号] += 1;
 			entity[0][i].面板[吸血效果编号] += 1;
 			entity[0][i].面板[治疗效果编号] += 1;
 		}
 	}
-	for (int i = 0; i < 4; i++)if (entity[1][i].存活 != 0) entity[1][i].Prepare("战斗开始");
-	for (int i = 0; i < MAX_GROUP; i++)if (entity[0][i].存活 != 0) {
+	for (int i = 0; i < entity[1].size(); i++)if (entity[1][i].存活 != 0) entity[1][i].Prepare("战斗开始");
+	for (int i = 0; i < entity[0].size(); i++)if (entity[0][i].存活 != 0) {
 		if (entity[0][i].狂暴技能.回复抑制 != 0) {
-			for (int j = 0; j < MAX_GROUP; j++) {
+			for (int j = 0; j < entity[0].size(); j++) {
 				if (entity[0][j].存活 != 0) {
 					entity[0][j].面板[回复效果编号] *= (1 - entity[0][i].狂暴技能.回复抑制);
 				}
 			}
 		}
 		if (entity[0][i].狂暴技能.吸血抑制 != 0) {
-			for (int j = 0; j < MAX_GROUP; j++) {
+			for (int j = 0; j < entity[0].size(); j++) {
 				if (entity[0][j].存活 != 0) {
 					entity[0][j].面板[吸血效果编号] *= (1 - entity[0][i].狂暴技能.吸血抑制);
 				}
 			}
 		}
 		if (entity[0][i].狂暴技能.治疗抑制 != 0) {
-			for (int j = 0; j < MAX_GROUP; j++) {
+			for (int j = 0; j < entity[0].size(); j++) {
 				if (entity[0][j].存活 != 0) {
 					entity[0][j].面板[治疗效果编号] *= (1 - entity[0][i].狂暴技能.治疗抑制);
 				}
@@ -172,7 +166,7 @@ void TxtFight() {
 	timeLine.open("Texts/temp.txt", ofstream::out | ofstream::ate);
 	timeLine << endl <<  "战斗开始" << endl; timePrinted = 1; StartWar();
 	timeLine << endl << "当前属性" << endl;
-	for (int i = 0; i < 4; i++)if (entity[1][i].存活 != 0) {
+	for (int i = 0; i < entity[1].size(); i++)if (entity[1][i].存活 != 0) {
 		timeLine << "    " << entity[1][i].名称 << "：";
 		timeLine << "力" << entity[1][i].力量 << "  ";
 		timeLine << "魔" << entity[1][i].魔力 << "  ";
@@ -183,13 +177,12 @@ void TxtFight() {
 	}
 	while(!End() && timeClock <= 3600) {
 		timePrinted = 0;
-		timeClock += plank;
-		timeClock = float(Int(timeClock * 1000)) / 1000;
-		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].ViolentTime();
-		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].StatusTime();
-		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[1][i].存活 != 0) entity[1][i].StatusTime();
-		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].SkillTime();
-		for (int i = 0; i < MAX_GROUP; i++)if (!End() && entity[1][i].存活 != 0) entity[1][i].SkillTime();
+		timeClock += plank; timeClock = float(Int(timeClock * 1000)) / 1000;
+		for (int i = 0; i < entity[0].size(); i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].ViolentTime(); 
+		for (int i = 0; i < entity[0].size(); i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].StatusTime();
+		for (int i = 0; i < entity[1].size(); i++)if (!End() && entity[1][i].存活 != 0) entity[1][i].StatusTime();
+		for (int i = 0; i < entity[0].size(); i++)if (!End() && entity[0][i].存活 != 0) entity[0][i].SkillTime(); 
+		for (int i = 0; i < entity[1].size(); i++)if (!End() && entity[1][i].存活 != 0) entity[1][i].SkillTime(); 
 	}
 	timeLine.close();
 	fstream infile, outfile;
@@ -215,7 +208,7 @@ void TxtFight() {
 	infile.close();
 	outfile.close();
 	remove("Texts/temp.txt");
-	WinExec("notepad.exe Texts/时间轴.txt", SW_SHOW);
+	ShellExecute(NULL, _T("open"), _T("notepad.exe"), _T("Texts/时间轴.txt"), NULL, SW_SHOW);
 	allowInterval = 1;
 }
 
@@ -239,14 +232,17 @@ void State(int state_) {
 	state = state_;
 	//显示该state对应的显示界面
 	entity[1][curplace].Init(curplace);
-	if (state == 0) {
+	if (state == -1) {
+		Picture(hdc, "Pictures/背景/封面.jpg");
+	}
+	else if (state == 0) {
 		Picture(hdc, "Pictures/背景/庇护所.jpg");
 	}
-	if (state == 1) {
+	else if (state == 1) {
 		PutInput();
 		Select();
 	}
-	if (state == 2) {
+	else if (state == 2) {
 		Picture(hdc, "Pictures/背景/选将.jpg");
 	}
 	else if (state >= 3 && state <= 6) {
@@ -322,7 +318,7 @@ void State(int state_) {
 		TextSelect(hdc, font_relicpoint, 220, 220, 220);
 		TextOut(hdc, 350, 157 + 40 * (state - 33), TEXT("⇦"), wcslen(TEXT("⇦")));
 	}
-	if (state == 44) {
+	else if (state == 44) {
 		SelectRelic();
 		PBSelect(hdc, pen_coffee, brush_coffee);
 		Rectangle(hdc, 481, 175, 782, 280);
@@ -331,31 +327,70 @@ void State(int state_) {
 		TextSelect(hdc, font_monsterSearch, 220, 220, 220);
 		StringOut(hdc, 630 - tstr.length() * 8, 208, tstr);
 	}
+	else if (state == 101) {
+		Picture(hdc, "Pictures/背景/酒馆.jpg");
+		timeClock = -1;
+		extern int forceExit;
+		forceExit = 0;
+	}
+	else if (state == 111) {
+		Picture(hdc, "Pictures/背景/教会.jpg");
+		hwndDesk = GetDesktopWindow();
+		hdcDesk = GetDC(hwndDesk);
+		BitBlt(hdc, 0, -31, 380, 727, hdcDesk, 0, 0, SRCCOPY);
+		PBSelect(hdc, pen_red, brush_red);
+		MoveToEx(hdc, 37, 145, NULL); LineTo(hdc, 37, 543);
+		MoveToEx(hdc, 350, 141, NULL); LineTo(hdc, 350, 550);
+		MoveToEx(hdc, 85, 598, NULL); LineTo(hdc, 302, 598);
+		MoveToEx(hdc, 57, 200, NULL); LineTo(hdc, 112, 200);
+		MoveToEx(hdc, 51, 378, NULL); LineTo(hdc, 110, 378);
+	}
 }
-int tempa = 1;
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam) {
 	//PAINTSTRUCT ps;
 	switch (uMsg) {
 	case WM_CLOSE: DestroyWindow(hwnd); break;
 	case WM_DESTROY: PostQuitMessage(0); break;
 	case WM_PAINT: {
-		LoadKeyboardLayout(L"0x409", KLF_ACTIVATE | KLF_SETFORPROCESS);
-		Picture(hdcApp, "Pictures/背景/封面.jpg");
-		//Sleep(2000);
-		State(0);
+		if (painted == 0) {
+			GetBase();
+			LoadKeyboardLayout(L"00000804", KLF_ACTIVATE | KLF_SETFORPROCESS);
+			keybd_event(17, 0, 0, 0);
+			keybd_event(163, 0, 0, 0);
+			keybd_event(32, 0, 0, 0);
+			keybd_event(32, 0, KEYEVENTF_KEYUP, 0);
+			keybd_event(17, 0, KEYEVENTF_KEYUP, 0);
+			keybd_event(163, 0, KEYEVENTF_KEYUP, 0);
+			keybd_event(17, 0, 0, 0);
+			keybd_event(163, 0, 0, 0);
+			keybd_event(17, 0, KEYEVENTF_KEYUP, 0);
+			keybd_event(163, 0, KEYEVENTF_KEYUP, 0);
+			keybd_event(13, 0, 0, 0);
+			keybd_event(13, 0, KEYEVENTF_KEYUP, 0);
+			for (int i = 0; i < 4; i++) { Entity a; entity[1].push_back(a); }
+			State(-1);
+			painted = 1;
+		}
 		break;
 	}
 	case WM_LBUTTONUP: {
+		int mouse_x, mouse_y;
 		mouse_x = LOWORD(lparam); mouse_y = HIWORD(lparam);
 		if (tempa == 0) { cout << "if (Inbox(" << mouse_x << "," << mouse_y << ","; tempa = 1; }
 		else {
 			cout << mouse_x << "," << mouse_y << ")){  }" << endl; tempa = 0;
-		//	COLORREF pixel = ::GetPixel(hdc, mouse_x, mouse_y);
-		//	cout << int(GetRValue(pixel)) << ", " << int(GetGValue(pixel)) << ", " << int(GetBValue(pixel)) << endl;
+			//COLORREF pixel = ::GetPixel(hdc, mouse_x, mouse_y);
+			//cout << int(GetRValue(pixel)) << ", " << int(GetGValue(pixel)) << ", " << int(GetBValue(pixel)) << endl;
 		}
-		if (state == 0) {
+		if (state == -1) {
+			State(0);
+			break;
+		}
+		else if (state == 0) {
 			//庇护所大厅
 			if (Inbox(383, 547, 567, 651) || Inbox(460, 495, 496, 551)) { GetInput(); State(1); }
+			else if (Inbox(239, 294, 339, 397) || Inbox(262, 399, 366, 501)) { State(101);}
+			else if (Inbox(169, 157, 243, 253)) { State(111); }
 		}
 		else if (state == 1) {
 			//出征的配装选择界面
@@ -579,9 +614,21 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam) 
 		else if (state == 44) {
 			State(32);
 		}
+		else if (state == 101) {
+			extern int forceExit;
+			forceExit = 1;
+			cout << "1111111";
+			break;
+		}
+		else if (state == 111) {
+			if (Inbox(834, 606, 942, 659)) State(0);
+			else State(111);
+			break;
+		}
 		break;
 	}
 	case WM_KEYDOWN: {
+		//for (int i = 0; i < 300; i++)if (KEY_DOWN(i))cout << i << endl;;
 		if (KEY_DOWN(VK_ESCAPE)) {
 			PostQuitMessage(0);
 			break;
@@ -693,47 +740,158 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam) 
 			else State(44);
 			break;
 		}
+		else if (state == 101) {
+			state = 0;
+			break;
+		}
+		else if (state == 111) {
+			hwndDesk = GetDesktopWindow();
+			hdcDesk = GetDC(hwndDesk);
+			BitBlt(hdc, 0, -31, 380, 727, hdcDesk, 0, 0, SRCCOPY);
+			break;
+		}
+	}
+	case WM_TIMER: {
+		if (state == 101) {
+			extern int forceExit;
+			if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break;}
+			timeClock += plank;
+			if (timeClock > 0.5) {
+				Pub pub;
+				pub.Piao(); 
+				if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break; }
+				pub.ReadModel();
+				if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break; }
+				if (pub.ReadJob() == 0) {
+					if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break; }
+					pub.Disemploy();
+					if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break; }
+				}
+				else {
+					pub.Star4();
+					if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break; }
+					if (pub.ReadStar4() == 0) {
+						if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break; }
+						pub.Disemploy();
+						if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break; }
+					}
+					else {
+						pub.Star5();
+						if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break; }
+						if (pub.ReadStar5() == 0) {
+							if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break; }
+							pub.Disemploy();
+							if (forceExit != 0 || KEY_DOWN(VK_BACK)) { State(0); break; }
+						}
+						else {
+							Click(278, 578, 337, 599); 
+							State(0);
+						}
+					}
+				}
+				timeClock = 0;
+			}
+			break;
+		}
+		
 	}
 	default: break;
 	}
 	BitBlt(hdcApp, 0, 0, 995, 727, hdc, 0, 0, SRCCOPY);
 	return DefWindowProc(hwnd, uMsg, wparam, lparam);
 }
-int main() {
-	srand(time(0));
-	MoveWindow(GetConsoleWindow(), -5, 0, 416, 727, 1);
-	LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam);
-	HINSTANCE hInstance = GetModuleHandle(NULL);
-	WNDCLASS wc;
-	wc.lpfnWndProc = WindowProc;
-	wc.style = 0;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.lpszMenuName = NULL;
-	wc.hInstance = hInstance;
-	wc.lpszClassName = TEXT("wiki测试服");
-	wc.hIcon = LoadIcon(NULL, IDI_INFORMATION);
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-	RegisterClass(&wc);
-	hwndApp = CreateWindow(wc.lpszClassName, TEXT("wiki测试服"),
-		(WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU),
-		378, 0, 995, 727,
-		NULL, NULL, hInstance, NULL);
-	hdcApp = GetDC(hwndApp);
-	HBITMAP hBitmap;
-	hdc = CreateCompatibleDC(hdcApp);
-	hBitmap = CreateCompatibleBitmap(hdcApp, 995, 727);
-	SelectObject(hdc, hBitmap);
-	ShowWindow(hwndApp, SW_SHOWNORMAL);
-	UpdateWindow(hwndApp);
-	MSG msg;
-	while (1) {
-		if (allowInterval) {
-			if (GetMessage(&msg, NULL, 0, 0) == 0)break;
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+
+void Change(string& str, string src, string dst) {
+	if (src.size() != dst.size())return;
+	for (int i = 0; i < str.size() - src.size() + 1; i++) {
+		if (str.substr(i, src.size()) == src) {
+			for (int j = 0; j < src.size(); j++) {
+				str[i + j] = dst[j];
+			}
 		}
+	}
+}
+bool Divide(string& src, string str, string& dst0, string& dst1) {
+	string b = src;
+	int p = -1;
+	for (int i = 0; i <= b.size() - str.size(); i++) {
+		if (b.substr(i, str.size()) == str) {
+			dst0 = b.substr(0, i);
+			dst1 = b.substr(i + str.size(), b.size() - i - str.size());
+			return 1;
+		}
+	}
+	return 0;
+}
+void Erase(string& src, char ch) {
+	for (int i = 0; i < src.size(); i++) {
+		for (auto j = src.begin(); j != src.end(); j++) {
+			if ((*j) == ch) {
+				src.erase(j);
+				break;
+			}
+		}
+	}
+}
+int Find(string& src, char ch1, char ch2 = '@', char ch3 = '@') {
+	for (int i = 0; i < src.size(); i++) {
+		if (src[i] == ch1 || src[i] == ch2 || src[i] == ch3)return i;
+	}
+	return -1;
+}
+int main() {
+	try {
+		//Distribution();
+		//ShellExecute(NULL, _T("open"), _T("msedge.exe"), _T("https://wiki.biligame.com/dxcb2/index.php?title=%E6%AC%A3%E9%85%B1%E7%9A%84%E6%88%98%E5%8A%9B%E5%88%86%E6%9E%901#%E6%9C%9F%E6%9C%9B%E7%9F%A9%E9%98%B5%E8%AE%A1%E7%AE%97%E5%99%A8"), NULL, SW_SHOW);
+		srand(time(0));
+		MoveWindow(GetConsoleWindow(), -5, 0, 416, 727, 1);
+		LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wparam, LPARAM lparam);
+		HINSTANCE hInstance = GetModuleHandle(NULL);
+		WNDCLASS wc;
+		wc.lpfnWndProc = WindowProc;
+		wc.style = 0;
+		wc.cbClsExtra = 0;
+		wc.cbWndExtra = 0;
+		wc.lpszMenuName = NULL;
+		wc.hInstance = hInstance;
+		wc.lpszClassName = TEXT("wiki测试服");
+		wc.hIcon = LoadIcon(NULL, IDI_INFORMATION);
+		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+		RegisterClass(&wc);
+		hwndApp = CreateWindow(wc.lpszClassName, TEXT("wiki测试服"),
+			(WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU),
+			378, 0, 995, 727,
+			NULL, NULL, hInstance, NULL);
+		hdcApp = GetDC(hwndApp);
+		hwndGame = GetWindowHandleByPID(Getpid(1));
+		if (hwndGame != NULL)MoveWindow(hwndGame, 0, 0, 387, 720, 1);
+		else {
+			hwndGame = GetWindowHandleByPID(Getpid(2));
+			for (int i = 0; i < 1000; i++)MoveWindow(hwndGame, 0, 0, 387, i, 1);
+		}
+		hdcGame = GetDC(hwndGame);
+		hwndDesk = GetDesktopWindow();
+		hdcDesk = GetDC(hwndDesk);
+		HBITMAP hBitmap;
+		hdc = CreateCompatibleDC(hdcApp);
+		hBitmap = CreateCompatibleBitmap(hdcApp, 995, 727);
+		SelectObject(hdc, hBitmap);
+		ShowWindow(hwndApp, SW_SHOWNORMAL);
+		UpdateWindow(hwndApp);
+		SetTimer(hwndApp, 1, 1000 * plank, NULL);
+		MSG msg;
+		//Piao();
+		while (1) {
+			if (allowInterval) {
+				if (GetMessage(&msg, NULL, 0, 0) == 0)break;
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+	}
+	catch (string src) {
+		cout << src << endl;
 	}
 	return 0;
 }

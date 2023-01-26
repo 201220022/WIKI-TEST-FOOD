@@ -4,6 +4,7 @@ DWORD Getpid(int mode);
 HWND GetWindowHandleByPID(DWORD dwProcessID);
 string GBK_2_UTF8(string gbkStr);
 string UTF8_2_GBK(string utf8Str);
+int Str2Attribute(string src);
 
 int Int(float a);
 string FloatTran(float src);
@@ -16,7 +17,7 @@ void Picture(HDC hdc, string src, int x = 0, int y = 0, bool transparent = 0);
 void Picture(HDC hdc, string src, int x, int y, int a, int b);
 
 bool InBox(int mouse_x, int mouse_y, int l, int u, int r, int d);
-void Order();
+void Order(int num);
 bool Rand(float p);
 string Time(float t);
 int End();
@@ -31,4 +32,8 @@ void DelData();
 void PutData();
 int Recognize(int i, int j);
 void ReadRecast(HDC hdc, int m);
+
+float GetRand(float l, float r);
+void Click(int l, int u, int r, int d, int t = 1000);
 #endif
+
